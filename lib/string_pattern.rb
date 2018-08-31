@@ -18,10 +18,11 @@ require_relative 'string/pattern/add_to_ruby' if SP_ADD_TO_RUBY
 #             If true it will check on the strings of the array positions if they have the pattern format and assume in that case that is a pattern.
 class StringPattern
   class << self
-    attr_accessor :national_chars, :optimistic
+    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache
   end
   @national_chars = (('a'..'z').to_a + ('A'..'Z').to_a).join
   @optimistic = true
+  @cache = Hash.new()
   NUMBER_SET = ('0'..'9').to_a
   SPECIAL_SET = [' ', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']', "'", ';', ':', '?', '>', '<', '`', '|', '/', '"']
   ALPHA_SET_LOWER = ('a'..'z').to_a
@@ -36,6 +37,7 @@ class StringPattern
   # min_length, max_length, symbol_type, required_data, excluded_data, data_provided, string_set, all_characters_set
   ###############################################
   def StringPattern.analyze(pattern, silent:false)
+	return @cache[pattern.to_s] unless @cache[pattern.to_s].nil?
     min_length, max_length, symbol_type=pattern.to_s.scan(/(\d+)-(\d+):(.+)/)[0]
     if min_length.nil?
       min_length, symbol_type=pattern.to_s.scan(/^!?(\d+):(.+)/)[0]
@@ -45,6 +47,7 @@ class StringPattern
         return pattern.to_s
       end
     end
+	
     symbol_type='!'+symbol_type if pattern.to_s[0]=='!'
     min_length=min_length.to_i
     max_length=max_length.to_i
@@ -57,7 +60,7 @@ class StringPattern
     a=symbol_type
     begin_provided=a.index('[')
     excluded_end_tag=false
-    if begin_provided!=nil
+    unless begin_provided.nil?
       c=begin_provided+1
       until c==a.size or (a[c..c]==']' and a[c..c+1]!=']]')
         if a[c..c+1]==']]'
@@ -117,93 +120,97 @@ class StringPattern
 
     required=false
     required_symbol=''
-    symbol_type.split(//).each {|stc|
-      if stc=='/'
-        if !required
-          required=true
-        else
-          required=false
-        end
-      else
-        if required
-          required_symbol+=stc
-        end
-      end
-    }
-    national_set=@national_chars.split(//)
+    if symbol_type.include?("/")
+		symbol_type.chars.each {|stc|
+		  if stc=='/'
+			if !required
+			  required=true
+			else
+			  required=false
+			end
+		  else
+			if required
+			  required_symbol+=stc
+			end
+		  end
+		}
+	end
+		
+    national_set=@national_chars.chars
 
-    if !symbol_type['x'].nil?
+    if symbol_type.include?('L') then
+	  alpha_set = ALPHA_SET_LOWER + ALPHA_SET_CAPITAL
+	elsif symbol_type.include?('x')
       alpha_set=ALPHA_SET_LOWER
-      unless symbol_type['X'].nil?
+      if symbol_type.include?('X')
         alpha_set = alpha_set + ALPHA_SET_CAPITAL
       end
-    else
-      if !symbol_type['X'].nil?
-        alpha_set=ALPHA_SET_CAPITAL
-      elsif !symbol_type['L'].nil? then
-        alpha_set = ALPHA_SET_LOWER + ALPHA_SET_CAPITAL
-      else
-        alpha_set = ALPHA_SET_LOWER + ALPHA_SET_CAPITAL
-      end
+    elsif symbol_type.include?('X')
+      alpha_set=ALPHA_SET_CAPITAL
     end
-    unless symbol_type['T'].nil?
+    if symbol_type.include?('T')
       alpha_set=alpha_set+national_set
     end
 
-    unless required_symbol['x'].nil?
-      required_data.push ALPHA_SET_LOWER
-    end
-    unless required_symbol['X'].nil?
-      required_data.push ALPHA_SET_CAPITAL
-    end
-    unless required_symbol['L'].nil?
-      required_data.push(ALPHA_SET_CAPITAL+ALPHA_SET_LOWER)
-    end
-    unless required_symbol['T'].nil?
-      required_data.push national_set
-    end
-    required_symbol=required_symbol.downcase
+    unless required_symbol.nil?
+		if required_symbol.include?('x')
+		  required_data.push ALPHA_SET_LOWER
+		end
+		if required_symbol.include?('X')
+		  required_data.push ALPHA_SET_CAPITAL
+		end
+		if required_symbol.include?('L')
+		  required_data.push(ALPHA_SET_CAPITAL+ALPHA_SET_LOWER)
+		end
+		if required_symbol.include?('T')
+		  required_data.push national_set
+		end
+		required_symbol=required_symbol.downcase
+	end
     string_set=Array.new
     all_characters_set=ALPHA_SET_CAPITAL+ALPHA_SET_LOWER+NUMBER_SET+SPECIAL_SET+data_provided+national_set
 
-    unless symbol_type['_'].nil?
-      if symbol_type['$'].nil?
+    if symbol_type.include?('_')
+      unless symbol_type.include?('$')
         string_set.push(' ')
       end
-      unless required_symbol['_'].nil?
+      if required_symbol.include?('_')
         required_data.push([' '])
       end
     end
 
     symbol_type = symbol_type.downcase
 
-    if !symbol_type['x'].nil? or !symbol_type['l'].nil? or !symbol_type['t'].nil?
+    if symbol_type.include?('x') or symbol_type.include?('l') or symbol_type.include?('t')
       string_set = string_set + alpha_set
     end
-    unless symbol_type['n'].nil?
+    if symbol_type.include?('n')
       string_set = string_set + NUMBER_SET
     end
-    unless symbol_type['$'].nil?
+    if symbol_type.include?('$')
       string_set = string_set + SPECIAL_SET
     end
-    unless symbol_type['*'].nil?
+    if symbol_type.include?('*')
       string_set = string_set+all_characters_set
     end
     if data_provided.size!=0
       string_set = string_set + data_provided
     end
-    unless required_symbol['n'].nil?
-      required_data.push NUMBER_SET
-    end
-    unless required_symbol['$'].nil?
-      required_data.push SPECIAL_SET
-    end
-    if excluded_data.size>0
+	unless required_symbol.empty?
+		if required_symbol.include?('n')
+		  required_data.push NUMBER_SET
+		end
+		if required_symbol.include?('$')
+		  required_data.push SPECIAL_SET
+		end
+	end
+    unless excluded_data.empty?
       string_set=string_set-excluded_data.flatten
     end
     string_set.uniq!
-    return Pattern.new(min_length, max_length, symbol_type, required_data, excluded_data, data_provided,
+    @cache[pattern.to_s]=Pattern.new(min_length, max_length, symbol_type, required_data, excluded_data, data_provided,
                        string_set, all_characters_set)
+	return @cache[pattern.to_s]
   end
 
   ###############################################
@@ -273,7 +280,7 @@ class StringPattern
     if expected_errors.kind_of?(Symbol)
       expected_errors=[expected_errors]
     end
-
+	
     if pattern.kind_of?(Array)
       pattern.each {|pat|
         if pat.kind_of?(Symbol)
@@ -295,7 +302,7 @@ class StringPattern
       }
       return string
     elsif pattern.kind_of?(String) or pattern.kind_of?(Symbol)
-      patt=StringPattern.analyze(pattern)
+	  patt=StringPattern.analyze(pattern)
       min_length=patt.min_length
       max_length=patt.max_length
       symbol_type=patt.symbol_type
@@ -305,23 +312,27 @@ class StringPattern
       string_set=patt.string_set
       all_characters_set=patt.all_characters_set
 
-      required_chars=Array.new
-      required_data.each {|rd|
-        required_chars<<rd if rd.size==1
-      }
-      if (required_chars.flatten & excluded_data.flatten).size>0
-        puts "pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-        return ''
-      end
-
-      string_set_not_allowed=all_characters_set-string_set
+	  required_chars=Array.new
+      unless required_data.size==0
+		  required_data.each {|rd|
+			required_chars<<rd if rd.size==1
+		  }
+		  unless excluded_data.size==0
+			  if (required_chars.flatten & excluded_data.flatten).size>0
+				puts "pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+				return ''
+			  end
+		  end
+	  end
+      string_set_not_allowed=Array.new
 
     else
       puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
       return pattern.to_s
     end
 
-    allow_empty=false
+
+	allow_empty=false
     deny_pattern=false
     if symbol_type[0..0]=='!'
       deny_pattern=true
@@ -336,6 +347,7 @@ class StringPattern
     elsif symbol_type[0..0]=='0' then
       allow_empty=true
     end
+		
     if expected_errors.include?(:min_length) or expected_errors.include?(:length) or
         expected_errors.include?(:max_length)
       allow_empty=!allow_empty
@@ -352,8 +364,8 @@ class StringPattern
     expected_errors_left=expected_errors.dup
 
     symbol_type=symbol_type_orig
-
-    unless deny_pattern
+    
+	unless deny_pattern
       if required_data.size==0 and expected_errors_left.include?(:required_data)
         puts "required data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
         return ''
@@ -364,9 +376,12 @@ class StringPattern
         return ''
       end
 
-      if string_set_not_allowed.size==0 and expected_errors_left.include?(:string_set_not_allowed)
-        puts "all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-        return ''
+      if  expected_errors_left.include?(:string_set_not_allowed)
+		string_set_not_allowed=all_characters_set-string_set
+		if string_set_not_allowed.size==0 then 
+			puts "all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+			return ''
+		end
       end
     end
 
@@ -416,9 +431,12 @@ class StringPattern
         expected_errors_left.delete(:excluded_data)
       end
 
-      if string_set_not_allowed.size==0 and expected_errors_left.include?(:string_set_not_allowed)
-        expected_errors_left.delete(:string_set_not_allowed)
-      end
+      if expected_errors_left.include?(:string_set_not_allowed)
+		string_set_not_allowed=all_characters_set-string_set
+        if string_set_not_allowed.size==0
+			expected_errors_left.delete(:string_set_not_allowed)
+		end
+	  end
 
       if symbol_type=='!@' and expected_errors_left.size==0 and !expected_errors.include?(:length) and
           (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data))
@@ -426,7 +444,6 @@ class StringPattern
       end
 
     end
-
 
     string = ''
     if symbol_type!='@' and symbol_type!='!@' and length!=0 and string_set.size!=0
@@ -437,8 +454,8 @@ class StringPattern
       if required_data.size>0
         positions_to_set=(0..(string.size-1)).to_a
         required_data.each {|rd|
-          if (string.split(//) & rd).size>0
-            rd_to_set=(string.split(//) & rd).sample
+          if (string.chars & rd).size>0
+            rd_to_set=(string.chars & rd).sample
           else
             rd_to_set=rd.sample
           end
@@ -458,14 +475,15 @@ class StringPattern
         }
       end
       excluded_data.each {|ed|
-        if (string.split(//) & ed).size>0
-          (string.split(//) & ed).each {|s|
+        if (string.chars & ed).size>0
+          (string.chars & ed).each {|s|
             string.gsub!(s, string_set.sample)
           }
         end
       }
 
       if expected_errors_left.include?(:value)
+		string_set_not_allowed=all_characters_set-string_set if string_set_not_allowed.size==0
         if string_set_not_allowed.size==0
           puts "Not possible to generate a non valid string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
           return ''
@@ -493,11 +511,14 @@ class StringPattern
         expected_errors_left.delete(:excluded_data)
       end
 
-      if expected_errors_left.include?(:string_set_not_allowed) and string_set_not_allowed.size>0
-        (rand(string.size)+1).times {
-          string[rand(string.size)]=string_set_not_allowed.sample
-        }
-        expected_errors_left.delete(:string_set_not_allowed)
+      if expected_errors_left.include?(:string_set_not_allowed) 
+	    string_set_not_allowed=all_characters_set-string_set if string_set_not_allowed.size==0
+		if string_set_not_allowed.size>0
+			(rand(string.size)+1).times {
+			  string[rand(string.size)]=string_set_not_allowed.sample
+			}
+			expected_errors_left.delete(:string_set_not_allowed)
+		end
       end
 
     elsif (symbol_type=='@' or symbol_type=='!@') and length>0
@@ -797,7 +818,7 @@ class StringPattern
       if symbol_type!='@'
         if required_data.size>0
           required_data.each {|rd|
-            if (text_to_validate.split(//) & rd).size==0
+            if (text_to_validate.chars & rd).size==0
               detected_errors.push(:value)
               detected_errors.push(:required_data)
               break
@@ -805,13 +826,13 @@ class StringPattern
           }
         end
         if excluded_data.size>0
-          if (excluded_data & text_to_validate.split(//)).size>0
+          if (excluded_data & text_to_validate.chars).size>0
             detected_errors.push(:value)
             detected_errors.push(:excluded_data)
           end
         end
         string_set_not_allowed=all_characters_set-string_set
-        text_to_validate.split(//).each {|st|
+        text_to_validate.chars.each {|st|
           if string_set_not_allowed.include?(st)
             detected_errors.push(:value)
             detected_errors.push(:string_set_not_allowed)
