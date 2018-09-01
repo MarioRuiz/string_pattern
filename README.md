@@ -75,6 +75,16 @@ p gen "3:N"
 #>443
 ```
 
+If you want to generate for example 1000 strings and be sure all those strings are different you can use:
+
+```ruby
+StringPattern.dont_repeat = true #default: false
+1000.times {
+	puts :"6-20:L/N/".gen
+}
+StringPattern.cache_values = Hash.new() #to clean the generated values from memory
+```
+
 #### Custom characters
 
 Also it's possible to provided the characters we want. To do that we'll use the symbol_type [characters]

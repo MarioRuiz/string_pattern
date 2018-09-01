@@ -16,13 +16,17 @@ require_relative 'string/pattern/add_to_ruby' if SP_ADD_TO_RUBY
 #                 Set of characters that will be used when using T pattern
 # optimistic: (TrueFalse, default: true)
 #             If true it will check on the strings of the array positions if they have the pattern format and assume in that case that is a pattern.
+# dont_repeat: (TrueFalse, default: false)
+#             If you want to generate for example 1000 strings and be sure all those strings are different you can set it to true
 class StringPattern
   class << self
-    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache
+    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values
   end
   @national_chars = (('a'..'z').to_a + ('A'..'Z').to_a).join
   @optimistic = true
   @cache = Hash.new()
+  @cache_values = Hash.new()
+  @dont_repeat = false
   NUMBER_SET = ('0'..'9').to_a
   SPECIAL_SET = [' ', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']', "'", ';', ':', '?', '>', '<', '`', '|', '/', '"']
   ALPHA_SET_LOWER = ('a'..'z').to_a
@@ -273,383 +277,405 @@ class StringPattern
   #     the generated string
   ###############################################
   def StringPattern.generate(pattern, expected_errors: [], **synonyms)
-    string=''
+	tries = 0
+	begin
+		good_result = true
+		tries+=1
+		string=''
 
-    expected_errors=synonyms[:errors] if synonyms.keys.include?(:errors)
+		expected_errors=synonyms[:errors] if synonyms.keys.include?(:errors)
 
-    if expected_errors.kind_of?(Symbol)
-      expected_errors=[expected_errors]
-    end
-	
-    if pattern.kind_of?(Array)
-      pattern.each {|pat|
-        if pat.kind_of?(Symbol)
-          if pat.to_s.scan(/^!?\d+-?\d*:.+/).size>0
-            string<<StringPattern.generate(pat.to_s, expected_errors: expected_errors)
-          else
-            string<<pat.to_s
-          end
-        elsif pat.kind_of?(String) then
-          if @optimistic and pat.to_s.scan(/^!?\d+-?\d*:.+/).size>0
-            string<<StringPattern.generate(pat.to_s, expected_errors: expected_errors)
-          else
-            string<<pat
-          end
-        else
-          puts "StringPattern.generate: it seems you supplied wrong array of patterns: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-          return ''
-        end
-      }
-      return string
-    elsif pattern.kind_of?(String) or pattern.kind_of?(Symbol)
-	  patt=StringPattern.analyze(pattern)
-      min_length=patt.min_length
-      max_length=patt.max_length
-      symbol_type=patt.symbol_type
-
-      required_data=patt.required_data
-      excluded_data=patt.excluded_data
-      string_set=patt.string_set
-      all_characters_set=patt.all_characters_set
-
-	  required_chars=Array.new
-      unless required_data.size==0
-		  required_data.each {|rd|
-			required_chars<<rd if rd.size==1
+		if expected_errors.kind_of?(Symbol)
+		  expected_errors=[expected_errors]
+		end
+		
+		if pattern.kind_of?(Array)
+		  pattern.each {|pat|
+			if pat.kind_of?(Symbol)
+			  if pat.to_s.scan(/^!?\d+-?\d*:.+/).size>0
+				string<<StringPattern.generate(pat.to_s, expected_errors: expected_errors)
+			  else
+				string<<pat.to_s
+			  end
+			elsif pat.kind_of?(String) then
+			  if @optimistic and pat.to_s.scan(/^!?\d+-?\d*:.+/).size>0
+				string<<StringPattern.generate(pat.to_s, expected_errors: expected_errors)
+			  else
+				string<<pat
+			  end
+			else
+			  puts "StringPattern.generate: it seems you supplied wrong array of patterns: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+			  return ''
+			end
 		  }
-		  unless excluded_data.size==0
-			  if (required_chars.flatten & excluded_data.flatten).size>0
-				puts "pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-				return ''
+		  return string
+		elsif pattern.kind_of?(String) or pattern.kind_of?(Symbol)
+		  patt=StringPattern.analyze(pattern)
+		  min_length=patt.min_length
+		  max_length=patt.max_length
+		  symbol_type=patt.symbol_type
+
+		  required_data=patt.required_data
+		  excluded_data=patt.excluded_data
+		  string_set=patt.string_set
+		  all_characters_set=patt.all_characters_set
+
+		  required_chars=Array.new
+		  unless required_data.size==0
+			  required_data.each {|rd|
+				required_chars<<rd if rd.size==1
+			  }
+			  unless excluded_data.size==0
+				  if (required_chars.flatten & excluded_data.flatten).size>0
+					puts "pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+					return ''
+				  end
 			  end
 		  end
-	  end
-      string_set_not_allowed=Array.new
+		  string_set_not_allowed=Array.new
 
-    else
-      puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-      return pattern.to_s
-    end
+		else
+		  puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+		  return pattern.to_s
+		end
 
 
-	allow_empty=false
-    deny_pattern=false
-    if symbol_type[0..0]=='!'
-      deny_pattern=true
-      possible_errors=[:length, :value, :required_data, :excluded_data, :string_set_not_allowed]
-      (rand(possible_errors.size)+1).times {
-        expected_errors<<possible_errors.sample
-      }
-      expected_errors.uniq!
-      if symbol_type[1..1]=='0'
-        allow_empty=true
-      end
-    elsif symbol_type[0..0]=='0' then
-      allow_empty=true
-    end
+		allow_empty=false
+		deny_pattern=false
+		if symbol_type[0..0]=='!'
+		  deny_pattern=true
+		  possible_errors=[:length, :value, :required_data, :excluded_data, :string_set_not_allowed]
+		  (rand(possible_errors.size)+1).times {
+			expected_errors<<possible_errors.sample
+		  }
+		  expected_errors.uniq!
+		  if symbol_type[1..1]=='0'
+			allow_empty=true
+		  end
+		elsif symbol_type[0..0]=='0' then
+		  allow_empty=true
+		end
+			
+		if expected_errors.include?(:min_length) or expected_errors.include?(:length) or
+			expected_errors.include?(:max_length)
+		  allow_empty=!allow_empty
+		elsif expected_errors.include?(:value) or
+			expected_errors.include?(:excluded_data) or
+			expected_errors.include?(:required_data) or
+			expected_errors.include?(:string_set_not_allowed) and allow_empty
+		  allow_empty=false
+		end
+
+		length=min_length
+		symbol_type_orig=symbol_type
+
+		expected_errors_left=expected_errors.dup
+
+		symbol_type=symbol_type_orig
 		
-    if expected_errors.include?(:min_length) or expected_errors.include?(:length) or
-        expected_errors.include?(:max_length)
-      allow_empty=!allow_empty
-    elsif expected_errors.include?(:value) or
-        expected_errors.include?(:excluded_data) or
-        expected_errors.include?(:required_data) or
-        expected_errors.include?(:string_set_not_allowed) and allow_empty
-      allow_empty=false
-    end
-
-    length=min_length
-    symbol_type_orig=symbol_type
-
-    expected_errors_left=expected_errors.dup
-
-    symbol_type=symbol_type_orig
-    
-	unless deny_pattern
-      if required_data.size==0 and expected_errors_left.include?(:required_data)
-        puts "required data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-        return ''
-      end
-
-      if excluded_data.size==0 and expected_errors_left.include?(:excluded_data)
-        puts "excluded data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-        return ''
-      end
-
-      if  expected_errors_left.include?(:string_set_not_allowed)
-		string_set_not_allowed=all_characters_set-string_set
-		if string_set_not_allowed.size==0 then 
-			puts "all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+		unless deny_pattern
+		  if required_data.size==0 and expected_errors_left.include?(:required_data)
+			puts "required data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
 			return ''
+		  end
+
+		  if excluded_data.size==0 and expected_errors_left.include?(:excluded_data)
+			puts "excluded data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+			return ''
+		  end
+
+		  if  expected_errors_left.include?(:string_set_not_allowed)
+			string_set_not_allowed=all_characters_set-string_set
+			if string_set_not_allowed.size==0 then 
+				puts "all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+				return ''
+			end
+		  end
 		end
-      end
-    end
 
-    if expected_errors_left.include?(:min_length) or
-        expected_errors_left.include?(:max_length) or
-        expected_errors_left.include?(:length)
-      if expected_errors_left.include?(:min_length) or
-          (min_length>0 and expected_errors_left.include?(:length) and rand(2)==0)
-        if min_length>0
-          if allow_empty
-            length=rand(min_length).to_i
-          else
-            length=rand(min_length-1).to_i+1
-          end
-          if required_data.size>length and required_data.size<min_length
-            length=required_data.size
-          end
-          expected_errors_left.delete(:length)
-          expected_errors_left.delete(:min_length)
-        else
-          puts "min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-          return ''
-        end
-      elsif expected_errors_left.include?(:max_length) or expected_errors_left.include?(:length)
-        length=max_length+1+rand(max_length).to_i
-        expected_errors_left.delete(:length)
-        expected_errors_left.delete(:max_length)
-      end
-    else
-      if allow_empty and rand(7)==1
-        length=0
-      else
-        if max_length==min_length
-          length=min_length
-        else
-          length=min_length + rand(max_length - min_length + 1)
-        end
-      end
-    end
-
-    if deny_pattern
-      if required_data.size==0 and expected_errors_left.include?(:required_data)
-        expected_errors_left.delete(:required_data)
-      end
-
-      if excluded_data.size==0 and expected_errors_left.include?(:excluded_data)
-        expected_errors_left.delete(:excluded_data)
-      end
-
-      if expected_errors_left.include?(:string_set_not_allowed)
-		string_set_not_allowed=all_characters_set-string_set
-        if string_set_not_allowed.size==0
-			expected_errors_left.delete(:string_set_not_allowed)
+		if expected_errors_left.include?(:min_length) or
+			expected_errors_left.include?(:max_length) or
+			expected_errors_left.include?(:length)
+		  if expected_errors_left.include?(:min_length) or
+			  (min_length>0 and expected_errors_left.include?(:length) and rand(2)==0)
+			if min_length>0
+			  if allow_empty
+				length=rand(min_length).to_i
+			  else
+				length=rand(min_length-1).to_i+1
+			  end
+			  if required_data.size>length and required_data.size<min_length
+				length=required_data.size
+			  end
+			  expected_errors_left.delete(:length)
+			  expected_errors_left.delete(:min_length)
+			else
+			  puts "min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+			  return ''
+			end
+		  elsif expected_errors_left.include?(:max_length) or expected_errors_left.include?(:length)
+			length=max_length+1+rand(max_length).to_i
+			expected_errors_left.delete(:length)
+			expected_errors_left.delete(:max_length)
+		  end
+		else
+		  if allow_empty and rand(7)==1
+			length=0
+		  else
+			if max_length==min_length
+			  length=min_length
+			else
+			  length=min_length + rand(max_length - min_length + 1)
+			end
+		  end
 		end
-	  end
 
-      if symbol_type=='!@' and expected_errors_left.size==0 and !expected_errors.include?(:length) and
-          (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data))
-        expected_errors_left.push(:value)
-      end
+		if deny_pattern
+		  if required_data.size==0 and expected_errors_left.include?(:required_data)
+			expected_errors_left.delete(:required_data)
+		  end
 
-    end
+		  if excluded_data.size==0 and expected_errors_left.include?(:excluded_data)
+			expected_errors_left.delete(:excluded_data)
+		  end
 
-    string = ''
-    if symbol_type!='@' and symbol_type!='!@' and length!=0 and string_set.size!=0
-      if string_set.size!=0
-        1.upto(length) {|i| string << string_set.sample.to_s
-        }
-      end
-      if required_data.size>0
-        positions_to_set=(0..(string.size-1)).to_a
-        required_data.each {|rd|
-          if (string.chars & rd).size>0
-            rd_to_set=(string.chars & rd).sample
-          else
-            rd_to_set=rd.sample
-          end
-          if ((0 ... string.length).find_all {|i| string[i, 1] == rd_to_set}).size==0
-            if positions_to_set.size==0
-              puts "pattern not valid on StringPattern.generate, not possible to generate a valid string: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-              return ''
-            else
-              k=positions_to_set.sample
-              string[k]=rd_to_set
-              positions_to_set.delete(k)
-            end
-          else
-            k=((0 ... string.length).find_all {|i| string[i, 1] == rd_to_set}).sample
-            positions_to_set.delete(k)
-          end
-        }
-      end
-      excluded_data.each {|ed|
-        if (string.chars & ed).size>0
-          (string.chars & ed).each {|s|
-            string.gsub!(s, string_set.sample)
-          }
-        end
-      }
+		  if expected_errors_left.include?(:string_set_not_allowed)
+			string_set_not_allowed=all_characters_set-string_set
+			if string_set_not_allowed.size==0
+				expected_errors_left.delete(:string_set_not_allowed)
+			end
+		  end
 
-      if expected_errors_left.include?(:value)
-		string_set_not_allowed=all_characters_set-string_set if string_set_not_allowed.size==0
-        if string_set_not_allowed.size==0
-          puts "Not possible to generate a non valid string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-          return ''
-        end
-        (rand(string.size)+1).times {
-          string[rand(string.size)]=(all_characters_set-string_set).sample
-        }
-        expected_errors_left.delete(:value)
-      end
+		  if symbol_type=='!@' and expected_errors_left.size==0 and !expected_errors.include?(:length) and
+			  (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data))
+			expected_errors_left.push(:value)
+		  end
 
-      if expected_errors_left.include?(:required_data) and required_data.size>0
-        (rand(required_data.size)+1).times {
-          chars_to_remove=required_data.sample
-          chars_to_remove.each {|char_to_remove|
-            string.gsub!(char_to_remove, (string_set-chars_to_remove).sample)
-          }
-        }
-        expected_errors_left.delete(:required_data)
-      end
+		end
 
-      if expected_errors_left.include?(:excluded_data) and excluded_data.size>0
-        (rand(string.size)+1).times {
-          string[rand(string.size)]=excluded_data.sample.sample
-        }
-        expected_errors_left.delete(:excluded_data)
-      end
-
-      if expected_errors_left.include?(:string_set_not_allowed) 
-	    string_set_not_allowed=all_characters_set-string_set if string_set_not_allowed.size==0
-		if string_set_not_allowed.size>0
-			(rand(string.size)+1).times {
-			  string[rand(string.size)]=string_set_not_allowed.sample
+		string = ''
+		if symbol_type!='@' and symbol_type!='!@' and length!=0 and string_set.size!=0
+		  if string_set.size!=0
+			1.upto(length) {|i| string << string_set.sample.to_s
 			}
-			expected_errors_left.delete(:string_set_not_allowed)
+		  end
+		  if required_data.size>0
+			positions_to_set=(0..(string.size-1)).to_a
+			required_data.each {|rd|
+			  if (string.chars & rd).size>0
+				rd_to_set=(string.chars & rd).sample
+			  else
+				rd_to_set=rd.sample
+			  end
+			  if ((0 ... string.length).find_all {|i| string[i, 1] == rd_to_set}).size==0
+				if positions_to_set.size==0
+				  puts "pattern not valid on StringPattern.generate, not possible to generate a valid string: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+				  return ''
+				else
+				  k=positions_to_set.sample
+				  string[k]=rd_to_set
+				  positions_to_set.delete(k)
+				end
+			  else
+				k=((0 ... string.length).find_all {|i| string[i, 1] == rd_to_set}).sample
+				positions_to_set.delete(k)
+			  end
+			}
+		  end
+		  excluded_data.each {|ed|
+			if (string.chars & ed).size>0
+			  (string.chars & ed).each {|s|
+				string.gsub!(s, string_set.sample)
+			  }
+			end
+		  }
+
+		  if expected_errors_left.include?(:value)
+			string_set_not_allowed=all_characters_set-string_set if string_set_not_allowed.size==0
+			if string_set_not_allowed.size==0
+			  puts "Not possible to generate a non valid string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+			  return ''
+			end
+			(rand(string.size)+1).times {
+			  string[rand(string.size)]=(all_characters_set-string_set).sample
+			}
+			expected_errors_left.delete(:value)
+		  end
+
+		  if expected_errors_left.include?(:required_data) and required_data.size>0
+			(rand(required_data.size)+1).times {
+			  chars_to_remove=required_data.sample
+			  chars_to_remove.each {|char_to_remove|
+				string.gsub!(char_to_remove, (string_set-chars_to_remove).sample)
+			  }
+			}
+			expected_errors_left.delete(:required_data)
+		  end
+
+		  if expected_errors_left.include?(:excluded_data) and excluded_data.size>0
+			(rand(string.size)+1).times {
+			  string[rand(string.size)]=excluded_data.sample.sample
+			}
+			expected_errors_left.delete(:excluded_data)
+		  end
+
+		  if expected_errors_left.include?(:string_set_not_allowed) 
+			string_set_not_allowed=all_characters_set-string_set if string_set_not_allowed.size==0
+			if string_set_not_allowed.size>0
+				(rand(string.size)+1).times {
+				  string[rand(string.size)]=string_set_not_allowed.sample
+				}
+				expected_errors_left.delete(:string_set_not_allowed)
+			end
+		  end
+
+		elsif (symbol_type=='@' or symbol_type=='!@') and length>0
+		  if min_length>6 and length<6
+			length=6
+		  end
+		  if deny_pattern and
+			  (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data) or
+				  expected_errors.include?(:string_set_not_allowed))
+			expected_errors_left.push(:value)
+			expected_errors.push(:value)
+			expected_errors.uniq!
+			expected_errors_left.uniq!
+		  end
+
+		  expected_errors_left_orig=expected_errors_left.dup
+		  tries=0
+		  begin
+			expected_errors_left=expected_errors_left_orig.dup
+			tries+=1
+			string=''
+			alpha_set=ALPHA_SET_LOWER + ALPHA_SET_CAPITAL
+			string_set=alpha_set + NUMBER_SET + ['.'] + ['_'] + ['-']
+			string_set_not_allowed=all_characters_set-string_set
+
+			extension='.'
+			at_sign='@'
+
+			if expected_errors_left.include?(:value)
+			  if rand(2)==1
+				extension=(all_characters_set-['.']).sample
+				expected_errors_left.delete(:value)
+				expected_errors_left.delete(:required_data)
+			  end
+			  if rand(2)==1
+				1.upto(rand(7)) {|i| extension << alpha_set.sample.downcase
+				}
+				(rand(extension.size)+1).times {
+				  extension[rand(extension.size)]=(string_set-alpha_set-['.']).sample
+				}
+				expected_errors_left.delete(:value)
+			  else
+				1.upto(rand(3)+2) {|i| extension << alpha_set.sample.downcase
+				}
+			  end
+			  if rand(2)==1
+				at_sign=(string_set-['@']).sample
+				expected_errors_left.delete(:value)
+				expected_errors_left.delete(:required_data)
+			  end
+			else
+			  if length>6
+				1.upto(rand(3)+2) {|i| extension << alpha_set.sample.downcase
+				}
+			  else
+				1.upto(2) {|i| extension << alpha_set.sample.downcase
+				}
+			  end
+			end
+			length_e=length-extension.size - 1
+			length1=rand(length_e-1) + 1
+			length2=length_e-length1
+			1.upto(length1) {|i| string << string_set.sample}
+
+			string << at_sign
+
+			domain=''
+			domain_set=alpha_set + NUMBER_SET + ['.'] + ['-']
+			1.upto(length2) {|i| domain << domain_set.sample.downcase
+			}
+
+			if expected_errors.include?(:value) and rand(2)==1 and domain.size>0
+			  (rand(domain.size)+1).times {
+				domain[rand(domain.size)]=(all_characters_set-domain_set).sample
+			  }
+			  expected_errors_left.delete(:value)
+			end
+			string << domain << extension
+
+			if expected_errors_left.include?(:value) or expected_errors_left.include?(:string_set_not_allowed)
+			  (rand(string.size)+1).times {
+				string[rand(string.size)]=string_set_not_allowed.sample
+			  }
+			  expected_errors_left.delete(:value)
+			  expected_errors_left.delete(:string_set_not_allowed)
+			end
+
+			error_regular_expression=false
+
+			if deny_pattern and expected_errors.include?(:length)
+			  good_result=true #it is already with wrong length
+			else
+			  # I'm doing this because many times the regular expression checking hangs with these characters
+			  wrong=%w(.. __ -- ._ _. .- -. _- -_ @. @_ @- .@ _@ -@ @@)
+			  if !(Regexp.union(*wrong) === string) #don't include any or the wrong strings
+				if string.index('@').to_i>0 and
+					string[0..(string.index('@')-1)].scan(/([a-z0-9]+([\+\._\-][a-z0-9]|)*)/i).join==string[0..(string.index('@')-1)] and
+					string[(string.index('@')+1)..-1].scan(/([0-9a-z]+([\.-][a-z0-9]|)*)/i).join==string[string[(string.index('@')+1)..-1]]
+				  error_regular_expression=false
+				else
+				  error_regular_expression=true
+				end
+			  else
+				error_regular_expression=true
+			  end
+
+			  if expected_errors.size==0
+				if error_regular_expression
+				  good_result=false
+				else
+				  good_result=true
+				end
+			  elsif expected_errors_left.size==0 and
+				  (expected_errors-[:length, :min_length, :max_length]).size==0
+				good_result=true
+			  elsif expected_errors!=[:length]
+				if !error_regular_expression
+				  good_result=false
+				elsif expected_errors.include?(:value)
+				  good_result=true
+				end
+			  end
+			end
+
+		  end until good_result or tries>100
+		  unless good_result
+			puts "Not possible to generate an email on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+			return ''
+		  end
 		end
-      end
-
-    elsif (symbol_type=='@' or symbol_type=='!@') and length>0
-      if min_length>6 and length<6
-        length=6
-      end
-      if deny_pattern and
-          (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data) or
-              expected_errors.include?(:string_set_not_allowed))
-        expected_errors_left.push(:value)
-        expected_errors.push(:value)
-        expected_errors.uniq!
-        expected_errors_left.uniq!
-      end
-
-      expected_errors_left_orig=expected_errors_left.dup
-      tries=0
-      begin
-        expected_errors_left=expected_errors_left_orig.dup
-        tries+=1
-        string=''
-        alpha_set=ALPHA_SET_LOWER + ALPHA_SET_CAPITAL
-        string_set=alpha_set + NUMBER_SET + ['.'] + ['_'] + ['-']
-        string_set_not_allowed=all_characters_set-string_set
-
-        extension='.'
-        at_sign='@'
-
-        if expected_errors_left.include?(:value)
-          if rand(2)==1
-            extension=(all_characters_set-['.']).sample
-            expected_errors_left.delete(:value)
-            expected_errors_left.delete(:required_data)
-          end
-          if rand(2)==1
-            1.upto(rand(7)) {|i| extension << alpha_set.sample.downcase
-            }
-            (rand(extension.size)+1).times {
-              extension[rand(extension.size)]=(string_set-alpha_set-['.']).sample
-            }
-            expected_errors_left.delete(:value)
-          else
-            1.upto(rand(3)+2) {|i| extension << alpha_set.sample.downcase
-            }
-          end
-          if rand(2)==1
-            at_sign=(string_set-['@']).sample
-            expected_errors_left.delete(:value)
-            expected_errors_left.delete(:required_data)
-          end
-        else
-          if length>6
-            1.upto(rand(3)+2) {|i| extension << alpha_set.sample.downcase
-            }
-          else
-            1.upto(2) {|i| extension << alpha_set.sample.downcase
-            }
-          end
-        end
-        length_e=length-extension.size - 1
-        length1=rand(length_e-1) + 1
-        length2=length_e-length1
-        1.upto(length1) {|i| string << string_set.sample}
-
-        string << at_sign
-
-        domain=''
-        domain_set=alpha_set + NUMBER_SET + ['.'] + ['-']
-        1.upto(length2) {|i| domain << domain_set.sample.downcase
-        }
-
-        if expected_errors.include?(:value) and rand(2)==1 and domain.size>0
-          (rand(domain.size)+1).times {
-            domain[rand(domain.size)]=(all_characters_set-domain_set).sample
-          }
-          expected_errors_left.delete(:value)
-        end
-        string << domain << extension
-
-        if expected_errors_left.include?(:value) or expected_errors_left.include?(:string_set_not_allowed)
-          (rand(string.size)+1).times {
-            string[rand(string.size)]=string_set_not_allowed.sample
-          }
-          expected_errors_left.delete(:value)
-          expected_errors_left.delete(:string_set_not_allowed)
-        end
-
-        error_regular_expression=false
-
-        if deny_pattern and expected_errors.include?(:length)
-          good_result=true #it is already with wrong length
-        else
-          # I'm doing this because many times the regular expression checking hangs with these characters
-          wrong=%w(.. __ -- ._ _. .- -. _- -_ @. @_ @- .@ _@ -@ @@)
-          if !(Regexp.union(*wrong) === string) #don't include any or the wrong strings
-            if string.index('@').to_i>0 and
-                string[0..(string.index('@')-1)].scan(/([a-z0-9]+([\+\._\-][a-z0-9]|)*)/i).join==string[0..(string.index('@')-1)] and
-                string[(string.index('@')+1)..-1].scan(/([0-9a-z]+([\.-][a-z0-9]|)*)/i).join==string[string[(string.index('@')+1)..-1]]
-              error_regular_expression=false
-            else
-              error_regular_expression=true
-            end
-          else
-            error_regular_expression=true
-          end
-
-          if expected_errors.size==0
-            if error_regular_expression
-              good_result=false
-            else
-              good_result=true
-            end
-          elsif expected_errors_left.size==0 and
-              (expected_errors-[:length, :min_length, :max_length]).size==0
-            good_result=true
-          elsif expected_errors!=[:length]
-            if !error_regular_expression
-              good_result=false
-            elsif expected_errors.include?(:value)
-              good_result=true
-            end
-          end
-        end
-
-      end until good_result or tries>100
-      unless good_result
-        puts "Not possible to generate an email on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-        return ''
-      end
+		if @dont_repeat
+			if @cache_values[pattern.to_s].nil?
+				@cache_values[pattern.to_s]=Array.new()
+				@cache_values[pattern.to_s].push(string)
+				good_result=true
+			elsif @cache_values[pattern.to_s].include?(string)
+				good_result = false
+			else
+				@cache_values[pattern.to_s].push(string)
+				good_result=true
+			end
+		end
+    end until good_result or tries>10000
+    unless good_result
+	  puts "Not possible to generate the string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+	  puts "Take in consideration if you are using StringPattern.dont_repeat=true that you don't try to generate more strings that are possible to be generated"
+	  return ''
     end
-
+	
     return string
   end
 
