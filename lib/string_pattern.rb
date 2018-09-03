@@ -125,7 +125,7 @@ class StringPattern
     required=false
     required_symbol=''
     if symbol_type.include?("/")
-		symbol_type.chars.each {|stc|
+	  symbol_type.chars.each {|stc|
 		  if stc=='/'
 			if !required
 			  required=true
@@ -137,7 +137,7 @@ class StringPattern
 			  required_symbol+=stc
 			end
 		  end
-		}
+	  }
 	end
 		
     national_set=@national_chars.chars
