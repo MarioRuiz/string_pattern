@@ -2,8 +2,8 @@
 
 [![Gem Version](https://badge.fury.io/rb/string_pattern.svg)](https://rubygems.org/gems/string_pattern)
 
-With this gem you can easily generate strings supplying a very simple pattern. 
-Also you can validate if a text fulfill an specific pattern or even generate a string following a pattern and returning wrong length, value... for testing your applications.
+With this gem, you can easily generate strings supplying a very simple pattern. 
+Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications.
 
 ## Installation
 
@@ -87,7 +87,7 @@ StringPattern.cache_values = Hash.new() #to clean the generated values from memo
 
 #### Custom characters
 
-Also it's possible to provided the characters we want. To do that we'll use the symbol_type [characters]
+Also, it's possible to provide the characters we want. To do that we'll use the symbol_type [characters]
 
 If we want to add the character ] we have to write ]]
 
@@ -153,7 +153,7 @@ Examples:
 
 ### Generate a string with specific expected errors
 
-Usually for testing purposes you need to generate strings that don't fulfill an specific pattern, then you can supply as a parameter expected_errors (alias: errors)
+Usually, for testing purposes you need to generate strings that don't fulfill a specific pattern, then you can supply as a parameter expected_errors (alias: errors)
 
 The possible values you can specify is one or more of these ones: :length, :min_length, :max_length, :value, :required_data, :excluded_data, :string_set_not_allowed
 
@@ -211,7 +211,7 @@ StringPattern.validate((text: "This text will be validated", pattern: :"10-20:Xn
 
 If we want to validate a string with a pattern and we are expecting to get specific errors, you can supply the parameter expected_errors (alias: errors) or not_expected_errors (aliases: non_expected_errors, not_errors).
 
-In this case the validate method will return true or false.
+In this case, the validate method will return true or false.
 
 Examples: 
 
@@ -230,7 +230,7 @@ Examples:
 
 #### SP_ADD_TO_RUBY
 
-This gem adds the methods generate (alias: gen) and validate (alias: val) to the Ruby classes: String, Array and Symbol. 
+This gem adds the methods generate (alias: gen) and validate (alias: val) to the Ruby classes: String, Array, and Symbol. 
 
 Also adds the method generate (alias: gen) to Kernel. By default (true) it is always added. 
 

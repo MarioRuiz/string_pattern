@@ -1,8 +1,8 @@
 Gem::Specification.new do |s|
   s.name        = 'string_pattern'
-  s.version     = '1.3.1'
+  s.version     = '1.3.2'
   s.summary     = "Generates easily random string following a simple pattern. '10-20:Xn/x/'.generate #>qBstvc6JN8ra"
-  s.description = "You can easily generate strings supplying a very simple pattern. Also you can validate if a text fulfill an specific pattern or even generate a string following a pattern and returning wrong length, value... for testing your applications."
+  s.description = "You can easily generate strings supplying a very simple pattern. Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications."
   s.authors     = ["Mario Ruiz"]
   s.email       = 'marioruizs@gmail.com'
   s.files       = ["lib/string_pattern.rb","lib/string/pattern/add_to_ruby.rb","LICENSE","README.md",".yardopts"]
