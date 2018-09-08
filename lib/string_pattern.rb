@@ -669,6 +669,18 @@ class StringPattern
 				good_result=true
 			end
 		end
+		if pattern.kind_of?(Symbol) and symbol_type[-1]=="&"
+			if @cache_values[pattern.__id__].nil?
+				@cache_values[pattern.__id__]=Array.new()
+				@cache_values[pattern.__id__].push(string)
+				good_result=true
+			elsif @cache_values[pattern.__id__].include?(string)
+				good_result = false
+			else
+				@cache_values[pattern.__id__].push(string)
+				good_result=true
+			end
+		end
     end until good_result or tries>10000
     unless good_result
 	  puts "Not possible to generate the string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"

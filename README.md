@@ -85,6 +85,19 @@ StringPattern.dont_repeat = true #default: false
 StringPattern.cache_values = Hash.new() #to clean the generated values from memory
 ```
 
+Using dont_repeat all the generated string during the current run will be unique.
+
+In case you just want one particular string to be unique but not the rest then add to the pattern just in the end the symbol: &
+
+The pattern needs to be a symbol object.
+
+```ruby
+1000.times {
+	puts :"6-20:L/N/&".gen #will be unique
+	puts :"10:N".gen
+}
+```
+
 #### Custom characters
 
 Also, it's possible to provide the characters we want. To do that we'll use the symbol_type [characters]
