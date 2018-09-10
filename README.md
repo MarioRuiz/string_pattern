@@ -5,6 +5,8 @@
 With this gem, you can easily generate strings supplying a very simple pattern. 
 Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications.
 
+To do even more take a look at [nice_hash gem] (https://github.com/MarioRuiz/nice_hash)
+
 ## Installation
 
 Add this line to your application's Gemfile:
