@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'string_pattern'
-  s.version     = '1.4.0'
+  s.version     = '1.4.1'
   s.summary     = "Generates easily random string following a simple pattern. '10-20:Xn/x/'.generate #>qBstvc6JN8ra"
   s.description = "You can easily generate strings supplying a very simple pattern. Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications."
   s.authors     = ["Mario Ruiz"]
