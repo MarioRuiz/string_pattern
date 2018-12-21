@@ -34,7 +34,7 @@ class StringPattern
 
 
   Pattern = Struct.new(:min_length, :max_length, :symbol_type, :required_data, :excluded_data, :data_provided,
-                       :string_set, :all_characters_set)
+                       :string_set, :all_characters_set, :unique)
 
   ###############################################
   # Analyze the pattern supplied and returns an object of Pattern structure including:
@@ -50,6 +50,12 @@ class StringPattern
         puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}" unless silent
         return pattern.to_s
       end
+    end
+    if symbol_type[-1]=="&"
+      symbol_type.chop!
+      unique = true
+    else
+      unique = false
     end
 
     symbol_type = '!' + symbol_type if pattern.to_s[0] == '!'
@@ -215,7 +221,7 @@ class StringPattern
     end
     string_set.uniq!
     @cache[pattern.to_s] = Pattern.new(min_length, max_length, symbol_type, required_data, excluded_data, data_provided,
-                                       string_set, all_characters_set)
+                                       string_set, all_characters_set, unique)
     return @cache[pattern.to_s]
   end
 
@@ -671,7 +677,7 @@ class StringPattern
           good_result = true
         end
       end
-      if pattern.kind_of?(Symbol) and symbol_type[-1] == "&"
+      if pattern.kind_of?(Symbol) and patt.unique
         if @cache_values[pattern.__id__].nil?
           @cache_values[pattern.__id__] = Array.new()
           @cache_values[pattern.__id__].push(string)
