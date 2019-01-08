@@ -296,9 +296,14 @@ class StringPattern
       if expected_errors.kind_of?(Symbol)
         expected_errors = [expected_errors]
       end
-
+      
       if pattern.kind_of?(Array)
         pattern.each {|pat|
+
+          if pat.kind_of?(Array) # for the case it is one of the values
+            pat = pat.sample
+          end
+
           if pat.kind_of?(Symbol)
             if pat.to_s.scan(/^!?\d+-?\d*:.+/).size > 0
               string << StringPattern.generate(pat.to_s, expected_errors: expected_errors)

@@ -77,6 +77,8 @@ p gen "3:N"
 #>443
 ```
 
+#### Generating unique strings
+
 If you want to generate for example 1000 strings and be sure all those strings are different you can use:
 
 ```ruby
@@ -99,6 +101,26 @@ The pattern needs to be a symbol object.
 	puts :"10:N".gen
 }
 ```
+
+#### How to generate one or another string
+
+In case you need to specify that the string is generated selecting one or another fixed string or pattern, you can do it by using Array of patterns and in the position you want you can add an array with the possible values
+
+```ruby
+p ["uno:", :"5:N", ['.red','.green', :'3:L'] ].gen
+
+# first position a fixed string: "uno:"
+# second position 5 random numbers
+# third position one of these values: '.red', '.green' or 3 letters
+
+# example output: 
+# 'uno:34322.red'
+# 'uno:44432.green'
+# 'uno:34322.red'
+
+```
+
+Take in consideration that this is only available to generate successful strings but not for validation
 
 #### Custom characters
 
