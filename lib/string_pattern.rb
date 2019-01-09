@@ -18,15 +18,18 @@ require_relative 'string/pattern/add_to_ruby' if SP_ADD_TO_RUBY
 #             If true it will check on the strings of the array positions if they have the pattern format and assume in that case that is a pattern.
 # dont_repeat: (TrueFalse, default: false)
 #             If you want to generate for example 1000 strings and be sure all those strings are different you can set it to true
+# default_infinite: (Integer, default: 10)
+#             In case using regular expressions the maximum when using * or + for repetitions 
 class StringPattern
   class << self
-    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values
+    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite
   end
   @national_chars = (('a'..'z').to_a + ('A'..'Z').to_a).join
   @optimistic = true
   @cache = Hash.new()
   @cache_values = Hash.new()
   @dont_repeat = false
+  @default_infinite = 10
   NUMBER_SET = ('0'..'9').to_a
   SPECIAL_SET = [' ', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']', "'", ';', ':', '?', '>', '<', '`', '|', '/', '"']
   ALPHA_SET_LOWER = ('a'..'z').to_a
@@ -346,7 +349,8 @@ class StringPattern
           end
         end
         string_set_not_allowed = Array.new
-
+      elsif pattern.kind_of?(Regexp)
+        return generate(pattern.to_sp, expected_errors: expected_errors)
       else
         puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
         return pattern.to_s

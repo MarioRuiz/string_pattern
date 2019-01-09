@@ -5,6 +5,8 @@
 With this gem, you can easily generate strings supplying a very simple pattern. 
 Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications.
 
+Also you can use regular expressions (Regexp) to generate strings: `/[a-z0-9]{2,5}\w+/.gen`
+
 To do even more take a look at [nice_hash gem](https://github.com/MarioRuiz/nice_hash)
 
 ## Installation
@@ -117,10 +119,56 @@ p ["uno:", :"5:N", ['.red','.green', :'3:L'] ].gen
 # 'uno:34322.red'
 # 'uno:44432.green'
 # 'uno:34322.red'
+# 'uno:28795xAB'
 
 ```
 
 Take in consideration that this is only available to generate successful strings but not for validation
+
+#### Generate strings using Regular Expressions (Regexp)
+
+Take in consideration this feature is not not supporting all possibilities for Regular expressions but it is fully functional. If you find any bug or limitation please add it to issues: https://github.com/MarioRuiz/string_pattern/issues
+
+In case you you want to change the default maximum for repetitions when using * or +: `StringPattern.default_infinite = 30` . By default is 10.
+
+If you want to translate a regular expression into an StringPattern use the method we added to Regexp class: `to_sp`
+
+Examples:
+
+```ruby
+/[a-z0-9]{2-5}\w+/.to_sp
+#> ["2-5:nx", "1-10:Ln_"]
+
+#regular expression for UUID v4
+/[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}/.to_sp
+#> ["8:n[ABCDEF]", "-", "4:n[ABCDEF]", "-4", "3:n[ABCDEF]", "-", "1:[89AB]", "3:n[ABCDEF]", "-", "12:n[ABCDEF]"]
+```
+
+If you want to generate a random string following the regular expression, you can do it like a normal string pattern:
+
+```ruby
+
+regexp = /[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}/
+
+# using StringPattern class
+puts StringPattern.generate(regexp)
+
+# using Kernel
+puts generate(regexp)
+
+# using generate method added to Regexp class
+puts regexp.generate
+
+#using the alias 'gen'
+puts regexp.gen 
+
+# output:
+#>7009574B-6F2F-436E-BB7A-EA5FDA6B4E47
+#>5FB1718F-108A-4F62-8170-33C43FD86B1D
+#>05745B6F-93BA-475F-8118-DD56E5EAC4D1
+#>2D6FC189-8D50-45A8-B182-780193838502
+
+```
 
 #### Custom characters
 
@@ -213,6 +261,7 @@ Examples:
 
 "10:L/n/".gen errors: [:value]
 #> 1hwIw;v{KQ, mpk*l]!7:!, wocipgZt8@
+
 ```
 
 ### Validate if a string is following a pattern
