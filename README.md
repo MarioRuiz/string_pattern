@@ -104,30 +104,9 @@ The pattern needs to be a symbol object.
 }
 ```
 
-#### How to generate one or another string
-
-In case you need to specify that the string is generated selecting one or another fixed string or pattern, you can do it by using Array of patterns and in the position you want you can add an array with the possible values
-
-```ruby
-p ["uno:", :"5:N", ['.red','.green', :'3:L'] ].gen
-
-# first position a fixed string: "uno:"
-# second position 5 random numbers
-# third position one of these values: '.red', '.green' or 3 letters
-
-# example output: 
-# 'uno:34322.red'
-# 'uno:44432.green'
-# 'uno:34322.red'
-# 'uno:28795xAB'
-
-```
-
-Take in consideration that this is only available to generate successful strings but not for validation
-
 #### Generate strings using Regular Expressions (Regexp)
 
-Take in consideration this feature is not not supporting all possibilities for Regular expressions but it is fully functional. If you find any bug or limitation please add it to issues: https://github.com/MarioRuiz/string_pattern/issues
+Take in consideration this feature is not supporting all possibilities for Regular expressions but it is fully functional. If you find any bug or limitation please add it to issues: https://github.com/MarioRuiz/string_pattern/issues
 
 In case you you want to change the default maximum for repetitions when using * or +: `StringPattern.default_infinite = 30` . By default is 10.
 
@@ -169,6 +148,29 @@ puts regexp.gen
 #>2D6FC189-8D50-45A8-B182-780193838502
 
 ```
+
+### String patterns
+
+#### How to generate one or another string
+
+In case you need to specify that the string is generated selecting one or another fixed string or pattern, you can do it by using Array of patterns and in the position you want you can add an array with the possible values
+
+```ruby
+p ["uno:", :"5:N", ['.red','.green', :'3:L'] ].gen
+
+# first position a fixed string: "uno:"
+# second position 5 random numbers
+# third position one of these values: '.red', '.green' or 3 letters
+
+# example output: 
+# 'uno:34322.red'
+# 'uno:44432.green'
+# 'uno:34322.red'
+# 'uno:28795xAB'
+
+```
+
+Take in consideration that this is only available to generate successful strings but not for validation
 
 #### Custom characters
 
