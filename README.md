@@ -46,6 +46,10 @@ A pattern is a string where we supply these elements "a-b:c" where a is min_leng
 		*: all characters
 		0: empty string will be accepted.  It needs to be at the beginning of the symbol_type string
 		@: It will generate a valid email following the official algorithm. It cannot be used with other symbol_type
+        W: for English words, capital and lower. It cannot be used with other symbol_type
+		w: for English words only lower and words separated by underscore. It cannot be used with other symbol_type
+        P: for Spanish words, capital and lower. It cannot be used with other symbol_type
+        p: for Spanish words only lower and words separated by underscore. It cannot be used with other symbol_type
 		
 ### How to generate a string following a pattern
 
@@ -108,7 +112,7 @@ The pattern needs to be a symbol object.
 
 Take in consideration this feature is not supporting all possibilities for Regular expressions but it is fully functional. If you find any bug or limitation please add it to issues: https://github.com/MarioRuiz/string_pattern/issues
 
-In case you you want to change the default maximum for repetitions when using * or +: `StringPattern.default_infinite = 30` . By default is 10.
+In case you want to change the default maximum for repetitions when using * or +: `StringPattern.default_infinite = 30` . By default is 10.
 
 If you want to translate a regular expression into an StringPattern use the method we added to Regexp class: `to_sp`
 

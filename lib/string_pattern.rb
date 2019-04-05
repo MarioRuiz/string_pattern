@@ -34,7 +34,14 @@ class StringPattern
   SPECIAL_SET = [' ', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']', "'", ';', ':', '?', '>', '<', '`', '|', '/', '"']
   ALPHA_SET_LOWER = ('a'..'z').to_a
   ALPHA_SET_CAPITAL = ('A'..'Z').to_a
-
+  @palabras = []
+  @palabras_camel = []
+  @words = []
+  @words_camel = []
+  @palabras_short = []
+  @words_short = []
+  @palabras_camel_short = []
+  @words_camel_short = []
 
   Pattern = Struct.new(:min_length, :max_length, :symbol_type, :required_data, :excluded_data, :data_provided,
                        :string_set, :all_characters_set, :unique)
@@ -194,12 +201,12 @@ class StringPattern
       end
     end
 
-    symbol_type = symbol_type.downcase
+    #symbol_type = symbol_type.downcase
 
-    if symbol_type.include?('x') or symbol_type.include?('l') or symbol_type.include?('t')
+    if symbol_type.downcase.include?('x') or symbol_type.downcase.include?('l') or symbol_type.downcase.include?('t')
       string_set = string_set + alpha_set
     end
-    if symbol_type.include?('n')
+    if symbol_type.downcase.include?('n')
       string_set = string_set + NUMBER_SET
     end
     if symbol_type.include?('$')
@@ -251,7 +258,7 @@ class StringPattern
   #                     x for alpha in lowercase
   #                     X for alpha in capital letters
   #                     L for all kind of alpha in capital and lower letters
-  #                     T For the national characters defined on StringPattern.national_chars
+  #                     T for the national characters defined on StringPattern.national_chars
   #                     n for number
   #                     $ for special characters (includes space)
   #                     _ for space
@@ -263,7 +270,12 @@ class StringPattern
   #                   If you want to include the character " use \"
   #                   If you want to include the character \ use \\
   #                   If you want to include the character [ use \[
-  #                   Another uses: @ for email
+  #                   Other uses: 
+  #                     @ for email
+  #                     W for English words, capital and lower
+  #                     w for English words only lower and words separated by underscore
+  #                     P for Spanish words, capital and lower
+  #                     p for Spanish words only lower and words separated by underscore
   #   Examples:
   #    [:"6:X", :"3-8:_N"]
   #       # it will return a string starting with 6 capital letters and then a string containing numbers and space from 3 to 8 characters, for example: "LDJKKD34 555"
@@ -545,6 +557,88 @@ class StringPattern
             expected_errors_left.delete(:string_set_not_allowed)
           end
         end
+      elsif (symbol_type == 'W' or symbol_type == 'P' or symbol_type=='w' or symbol_type =='p') and length>0
+        #jal9
+        words = []
+        words_short = []
+        if symbol_type == 'W'
+          if @words_camel.empty? 
+            require "pathname"
+            require "json"
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "english/nouns.json"
+            nouns = JSON.parse(File.read(filename))
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "english/adjs.json"
+            adjs = JSON.parse(File.read(filename))
+            nouns = nouns.map(&:to_camel_case)
+            adjs = adjs.map(&:to_camel_case)
+            @words_camel = adjs + nouns
+            @words_camel_short = @words_camel.sample(1000)
+          end
+          words = @words_camel
+          words_short = @words_camel_short
+        elsif symbol_type == 'w'
+          if @words.empty? 
+            require "pathname"
+            require "json"
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "english/nouns.json"
+            nouns = JSON.parse(File.read(filename))
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "english/adjs.json"
+            adjs = JSON.parse(File.read(filename))
+            @words = adjs + nouns
+            @words_short = @words.sample(1000)
+          end
+          words = @words
+          words_short = @words_short
+        elsif symbol_type == 'P'
+          if @palabras_camel.empty? 
+            require "pathname"
+            require "json"
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras.json"
+            palabras = JSON.parse(File.read(filename))
+            palabras = palabras.map(&:to_camel_case)
+            @palabras_camel = palabras
+            @palabras_camel_short = @palabras_camel.sample(1000)
+          end
+          words = @palabras_camel
+          words_short = @palabras_camel_short
+        elsif symbol_type == 'p'
+          if @palabras.empty? 
+            require "pathname"
+            require "json"
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras.json"
+            palabras = JSON.parse(File.read(filename))
+            @palabras = palabras
+            @palabras_short = @palabras.sample(1000)
+          end
+          words = @palabras
+          words_short = @palabras_short
+        end
+
+        wordr = ""
+        wordr_array = []
+        tries = 0
+        while wordr.length < min_length
+          tries += 1
+          length = rand(max_length - wordr.length)+1
+          if (tries % 100) == 0
+            words_short = words.sample(1000)
+          end
+          if tries > 1000
+            wordr += 'A'*length
+            break
+          end
+          if symbol_type == 'w' or symbol_type == "p"
+            res = (words_short.select { |word| word.length == length }).sample.to_s
+            unless res.to_s==''
+              wordr_array<<res
+              wordr = wordr_array.join("_")
+            end
+          else
+            wordr += (words_short.select { |word| word.length == length }).sample.to_s
+          end
+        end
+        good_result = true
+        string = wordr      
 
       elsif (symbol_type == '@' or symbol_type == '!@') and length > 0
         if min_length > 6 and length < 6
