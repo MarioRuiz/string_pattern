@@ -3,7 +3,7 @@
 [![Gem Version](https://badge.fury.io/rb/string_pattern.svg)](https://rubygems.org/gems/string_pattern)
 
 With this gem, you can easily generate strings supplying a very simple pattern. 
-Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications.
+Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications. Perfect to be used in test data factories.
 
 Also you can use regular expressions (Regexp) to generate strings: `/[a-z0-9]{2,5}\w+/.gen`
 
@@ -37,19 +37,19 @@ A pattern is a string where we supply these elements "a-b:c" where a is min_leng
     
 	symbol_type: The type of the string we want.
         x: from a to z (lowercase)
-		X: A to Z (capital letters)
-		L: A to Z and a to z
-		T: National characters defined on StringPattern.national_chars
-		n or N: for numbers. 0 to 9
-		$: special characters, $%&#...  (includes blank space)
-		_: blank space
-		*: all characters
-		0: empty string will be accepted.  It needs to be at the beginning of the symbol_type string
-		@: It will generate a valid email following the official algorithm. It cannot be used with other symbol_type
-        W: for English words, capital and lower. It cannot be used with other symbol_type
-		w: for English words only lower and words separated by underscore. It cannot be used with other symbol_type
-        P: for Spanish words, capital and lower. It cannot be used with other symbol_type
-        p: for Spanish words only lower and words separated by underscore. It cannot be used with other symbol_type
+        X: A to Z (capital letters)
+        L: A to Z and a to z
+        T: National characters defined on StringPattern.national_chars
+        n or N: for numbers. 0 to 9
+        $: special characters, $%&#...  (includes blank space)
+        _: blank space
+        *: all characters
+        0: empty string will be accepted.  It needs to be at the beginning of the symbol_type string
+            @: It will generate a valid email following the official algorithm. It cannot be used with other symbol_type
+            W: for English words, capital and lower. It cannot be used with other symbol_type
+            w: for English words only lower and words separated by underscore. It cannot be used with other symbol_type
+            P: for Spanish words, capital and lower. It cannot be used with other symbol_type
+            p: for Spanish words only lower and words separated by underscore. It cannot be used with other symbol_type
 		
 ### How to generate a string following a pattern
 
@@ -106,6 +106,27 @@ The pattern needs to be a symbol object.
 	puts :"6-20:L/N/&".gen #will be unique
 	puts :"10:N".gen
 }
+```
+
+#### Generate words randomly in English or Spanish
+
+To generate a string of the length you want that will include only real words, use the symbol types:
+* W: generates English words following CamelCase ('ExampleOutput')
+* w: generates English words following snake_case ('example_output')
+* P: generates Spanish words following CamelCase ('EjemploSalida')
+* p: generates Spanish words following snake_case ('ejemplo_salida')
+
+```ruby
+require 'string_pattern'
+
+puts '10-30:W'.gen
+#> FirstLieutenant
+puts '10-30:w'.gen
+#> paris_university
+puts '10-30:P'.gen
+#> SillaMetelizada
+puts '10-30:p'.gen
+#> despacho_grande
 ```
 
 #### Generate strings using Regular Expressions (Regexp)
