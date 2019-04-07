@@ -2,7 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/string_pattern.svg)](https://rubygems.org/gems/string_pattern)
 
-With this gem, you can easily generate strings supplying a very simple pattern. 
+With this gem, you can easily generate strings supplying a very simple pattern. Even generate random words in English or Spanish.
 Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications. Perfect to be used in test data factories.
 
 Also you can use regular expressions (Regexp) to generate strings: `/[a-z0-9]{2,5}\w+/.gen`
@@ -124,7 +124,7 @@ puts '10-30:W'.gen
 puts '10-30:w'.gen
 #> paris_university
 puts '10-30:P'.gen
-#> SillaMetelizada
+#> SillaMetalizada
 puts '10-30:p'.gen
 #> despacho_grande
 ```
