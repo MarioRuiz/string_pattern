@@ -558,7 +558,6 @@ class StringPattern
           end
         end
       elsif (symbol_type == 'W' or symbol_type == 'P' or symbol_type=='w' or symbol_type =='p') and length>0
-        #jal9
         words = []
         words_short = []
         if symbol_type == 'W'
