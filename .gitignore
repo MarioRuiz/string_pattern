@@ -12,6 +12,7 @@
 /tmp/
 .vscode/
 /data/spanish/black.txt
+/data/english/black.txt
 
 # Used by dotenv library to load environment variables.
 # .env
