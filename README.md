@@ -129,7 +129,7 @@ puts '10-30:p'.gen
 #> despacho_grande
 ```
 
-The word list is loaded on the first request to generate words, after that the speed to generate words increases amazingly. 132000 English words and 250000 Spanish words. The vocabularies are public open sources, we only removed offensive words.
+The word list is loaded on the first request to generate words, after that the speed to generate words increases amazingly. 85000 English words and 250000 Spanish words. The vocabularies are a sample of public open sources.
 
 #### Generate strings using Regular Expressions (Regexp)
 
