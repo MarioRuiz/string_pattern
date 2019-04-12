@@ -6,7 +6,11 @@ Gem::Specification.new do |s|
   s.authors     = ["Mario Ruiz"]
   s.email       = 'marioruizs@gmail.com'
   s.files       = ["lib/string_pattern.rb","lib/string/pattern/add_to_ruby.rb","LICENSE","README.md",".yardopts",
-                  'data/english/adjs.json', 'data/english/nouns.json', 'data/spanish/palabras.json']
+                  'data/english/adjs.json', 'data/english/nouns.json', 'data/spanish/palabras0.json',
+                  'data/spanish/palabras1.json','data/spanish/palabras2.json','data/spanish/palabras3.json',
+                  'data/spanish/palabras4.json','data/spanish/palabras5.json','data/spanish/palabras6.json',
+                  'data/spanish/palabras7.json','data/spanish/palabras8.json','data/spanish/palabras9.json',
+                  'data/spanish/palabras10.json','data/spanish/palabras11.json',]
   s.extra_rdoc_files = ["LICENSE","README.md"]
   s.homepage    = 'https://github.com/MarioRuiz/string_pattern'
   s.license       = 'MIT'
