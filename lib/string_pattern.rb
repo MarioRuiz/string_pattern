@@ -20,9 +20,11 @@ require_relative 'string/pattern/add_to_ruby' if SP_ADD_TO_RUBY
 #             If you want to generate for example 1000 strings and be sure all those strings are different you can set it to true
 # default_infinite: (Integer, default: 10)
 #             In case using regular expressions the maximum when using * or + for repetitions 
+# word_separator: (String, default: '_')
+#             When generating words using symbol types 'w' or 'p' the character to separate the english or spanish words.
 class StringPattern
   class << self
-    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite
+    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite, :word_separator
   end
   @national_chars = (('a'..'z').to_a + ('A'..'Z').to_a).join
   @optimistic = true
@@ -30,6 +32,7 @@ class StringPattern
   @cache_values = Hash.new()
   @dont_repeat = false
   @default_infinite = 10
+  @word_separator = '_'
   NUMBER_SET = ('0'..'9').to_a
   SPECIAL_SET = [' ', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']', "'", ';', ':', '?', '>', '<', '`', '|', '/', '"']
   ALPHA_SET_LOWER = ('a'..'z').to_a
@@ -592,7 +595,7 @@ class StringPattern
           if @palabras_camel.empty? 
             require "pathname"
             require "json"
-            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras.json"
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras#{rand(12)}.json"
             palabras = JSON.parse(File.read(filename))
             palabras = palabras.map(&:to_camel_case)
             @palabras_camel = palabras
@@ -604,7 +607,7 @@ class StringPattern
           if @palabras.empty? 
             require "pathname"
             require "json"
-            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras.json"
+            filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras#{rand(12)}.json"
             palabras = JSON.parse(File.read(filename))
             @palabras = palabras
             @palabras_short = @palabras.sample(1000)
@@ -630,7 +633,7 @@ class StringPattern
             res = (words_short.select { |word| word.length == length }).sample.to_s
             unless res.to_s==''
               wordr_array<<res
-              wordr = wordr_array.join("_")
+              wordr = wordr_array.join(@word_separator)
             end
           else
             wordr += (words_short.select { |word| word.length == length }).sample.to_s

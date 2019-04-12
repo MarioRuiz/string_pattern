@@ -129,6 +129,20 @@ puts '10-30:p'.gen
 #> despacho_grande
 ```
 
+If you want to use a different word separator than "_" when using 'w' or 'p':
+
+```ruby
+# blank space for example
+require 'string_pattern'
+
+StringPattern.word_separator = ' '
+
+puts '10-30:w'.gen
+#> paris university
+puts '10-30:p'.gen
+#> despacho grande
+```
+
 The word list is loaded on the first request to generate words, after that the speed to generate words increases amazingly. 85000 English words and 250000 Spanish words. The vocabularies are a sample of public open sources.
 
 #### Generate strings using Regular Expressions (Regexp)
