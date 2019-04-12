@@ -574,7 +574,7 @@ class StringPattern
             nouns = nouns.map(&:to_camel_case)
             adjs = adjs.map(&:to_camel_case)
             @words_camel = adjs + nouns
-            @words_camel_short = @words_camel.sample(1000)
+            @words_camel_short = @words_camel.sample(2000)
           end
           words = @words_camel
           words_short = @words_camel_short
@@ -587,7 +587,7 @@ class StringPattern
             filename = File.join Pathname(File.dirname(__FILE__)), "../data", "english/adjs.json"
             adjs = JSON.parse(File.read(filename))
             @words = adjs + nouns
-            @words_short = @words.sample(1000)
+            @words_short = @words.sample(2000)
           end
           words = @words
           words_short = @words_short
@@ -599,7 +599,7 @@ class StringPattern
             palabras = JSON.parse(File.read(filename))
             palabras = palabras.map(&:to_camel_case)
             @palabras_camel = palabras
-            @palabras_camel_short = @palabras_camel.sample(1000)
+            @palabras_camel_short = @palabras_camel.sample(2000)
           end
           words = @palabras_camel
           words_short = @palabras_camel_short
@@ -610,7 +610,7 @@ class StringPattern
             filename = File.join Pathname(File.dirname(__FILE__)), "../data", "spanish/palabras#{rand(12)}.json"
             palabras = JSON.parse(File.read(filename))
             @palabras = palabras
-            @palabras_short = @palabras.sample(1000)
+            @palabras_short = @palabras.sample(2000)
           end
           words = @palabras
           words_short = @palabras_short
@@ -621,26 +621,27 @@ class StringPattern
         tries = 0
         while wordr.length < min_length
           tries += 1
-          length = rand(max_length - wordr.length)+1
-          if (tries % 100) == 0
-            words_short = words.sample(1000)
-          end
+          length = max_length - wordr.length
           if tries > 1000
             wordr += 'A'*length
             break
           end
           if symbol_type == 'w' or symbol_type == "p"
-            res = (words_short.select { |word| word.length == length }).sample.to_s
+            length = length -1 if wordr_array.size>0
+            res = (words_short.select { |word| word.length <= length && word.length!=length-1 && word.length!=length-2 && word.length!=length-3 }).sample.to_s
             unless res.to_s==''
               wordr_array<<res
               wordr = wordr_array.join(@word_separator)
             end
           else
-            wordr += (words_short.select { |word| word.length == length }).sample.to_s
+            wordr += (words_short.select { |word| word.length <= length && word.length!=length-1 && word.length!=length-2 && word.length!=length-3}).sample.to_s
+          end
+          if (tries % 100) == 0
+            words_short = words.sample(2000)
           end
         end
         good_result = true
-        string = wordr      
+        string = wordr
 
       elsif (symbol_type == '@' or symbol_type == '!@') and length > 0
         if min_length > 6 and length < 6
