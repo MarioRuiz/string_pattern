@@ -35,7 +35,7 @@ class String
   # Convert to CamelCase a string
   ########################################################
   def to_camel_case
-    return self if self !~ /_/ && self !~ /\s/ && self =~ /[A-Z]+.*/
+    return self if self !~ /_/ && self !~ /\s/ && self =~ /^[A-Z]+.*/
 
     gsub(/\W/, '_')
       .split('_').map(&:capitalize).join
