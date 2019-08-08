@@ -13,6 +13,10 @@
 .vscode/
 /data/spanish/black.txt
 /data/english/black.txt
+Gemfile.lock
+/Gemfile.lock
+.covered.msgpack
+
 
 # Used by dotenv library to load environment variables.
 # .env

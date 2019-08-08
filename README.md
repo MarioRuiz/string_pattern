@@ -1,6 +1,10 @@
 # StringPattern
 
 [![Gem Version](https://badge.fury.io/rb/string_pattern.svg)](https://rubygems.org/gems/string_pattern)
+[![Build Status](https://travis-ci.com/MarioRuiz/string_pattern.svg?branch=master)](https://github.com/MarioRuiz/string_pattern)
+[![Coverage Status](https://coveralls.io/repos/github/MarioRuiz/string_pattern/badge.svg?branch=master)](https://coveralls.io/github/MarioRuiz/string_pattern?branch=master)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FMarioRuiz%2Fstring_pattern.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FMarioRuiz%2Fstring_pattern?ref=badge_shield)
+
 
 With this gem, you can easily generate strings supplying a very simple pattern. Even generate random words in English or Spanish.
 Also, you can validate if a text fulfills a specific pattern or even generate a string following a pattern and returning the wrong length, value... for testing your applications. Perfect to be used in test data factories.
