@@ -176,6 +176,31 @@ RSpec.describe StringPattern, "#generate" do
         expect("30:@".gen.size).to eq(30)
       end
     end
+
+    describe 'expected errors' do
+        it 'returns string with wrong length' do
+            expect("30:L".gen(errors: :length).size).not_to be(30)
+        end
+        it 'returns string with wrong min_length' do
+            expect("30:L".gen(errors: :min_length).size).to be < 30
+        end
+        it 'returns string with wrong max_length' do
+            expect("30:L".gen(errors: :max_length).size).to be > 30
+        end
+        it 'returns string with wrong value' do
+            expect("30:L".gen(errors: :value)).not_to match(/^[a-zA-Z]+$/)
+        end
+        it 'returns string with wrong required_data' do
+            expect("30:L/n/".gen(errors: :required_data)).not_to match(/[0-9]/)
+        end
+        it 'returns correct string with excluded_data' do
+            expect("30:n[%5%]".gen(errors: :excluded_data)).to include('5')
+        end
+        it 'returns correct string with string_set_not_allowed' do
+            expect("30:n".gen(errors: :string_set_not_allowed)).not_to match(/^[0-9]+$/)
+        end
+    end
+
   end
 
   describe "words" do
@@ -211,6 +236,15 @@ RSpec.describe StringPattern, "#generate" do
         expect("30:p".gen.size).to eq(30)
         expect("30:p".gen).to match(/^[a-záéíóúüñ\-]+$/)
       end
+    end
+  end
+  describe 'regexp' do
+    it 'generates correct pattern for simple regexp' do
+        expect(/b{10}/.gen).to match(/^[b]{10}$/)
+    end
+    it 'generates correct pattern for more complex regexp' do
+        regexp = /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/
+        expect(regexp.gen).to match(regexp)
     end
   end
 end
