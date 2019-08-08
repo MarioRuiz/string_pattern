@@ -137,7 +137,7 @@ class StringPattern
       deny_pattern = false
       if symbol_type[0..0] == '!'
         deny_pattern = true
-        possible_errors = [:length, :value, :required_data, :excluded_data, :string_set_not_allowed]
+        possible_errors = [:length, :value, :string_set_not_allowed]
         (rand(possible_errors.size) + 1).times {
           expected_errors << possible_errors.sample
         }

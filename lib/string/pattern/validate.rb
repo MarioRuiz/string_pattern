@@ -171,7 +171,7 @@ class StringPattern
           }
         end
         if excluded_data.size > 0
-          if (excluded_data & text_to_validate.chars).size > 0
+          if (excluded_data.flatten & text_to_validate.chars).size > 0
             detected_errors.push(:value)
             detected_errors.push(:excluded_data)
           end
@@ -207,7 +207,7 @@ class StringPattern
     end
 
     if expected_errors.size == 0 and not_expected_errors.size == 0
-      return detected_errors
+      return detected_errors.uniq
     else
       if expected_errors & detected_errors == expected_errors
         if (not_expected_errors & detected_errors).size > 0

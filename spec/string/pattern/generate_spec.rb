@@ -177,30 +177,53 @@ RSpec.describe StringPattern, "#generate" do
       end
     end
 
-    describe 'expected errors' do
-        it 'returns string with wrong length' do
-            expect("30:L".gen(errors: :length).size).not_to be(30)
-        end
-        it 'returns string with wrong min_length' do
-            expect("30:L".gen(errors: :min_length).size).to be < 30
-        end
-        it 'returns string with wrong max_length' do
-            expect("30:L".gen(errors: :max_length).size).to be > 30
-        end
-        it 'returns string with wrong value' do
-            expect("30:L".gen(errors: :value)).not_to match(/^[a-zA-Z]+$/)
-        end
-        it 'returns string with wrong required_data' do
-            expect("30:L/n/".gen(errors: :required_data)).not_to match(/[0-9]/)
-        end
-        it 'returns correct string with excluded_data' do
-            expect("30:n[%5%]".gen(errors: :excluded_data)).to include('5')
-        end
-        it 'returns correct string with string_set_not_allowed' do
-            expect("30:n".gen(errors: :string_set_not_allowed)).not_to match(/^[0-9]+$/)
-        end
+    describe "expected errors" do
+      it "returns string with wrong length" do
+        expect("30:L".gen(errors: :length).size).not_to be(30)
+      end
+      it "returns string with wrong min_length" do
+        expect("30:L".gen(errors: :min_length).size).to be < 30
+      end
+      it "returns string with wrong max_length" do
+        expect("30:L".gen(errors: :max_length).size).to be > 30
+      end
+      it "returns string with wrong value" do
+        expect("30:L".gen(errors: :value)).not_to match(/^[a-zA-Z]+$/)
+      end
+      it "returns string with wrong required_data" do
+        expect("30:L/n/".gen(errors: :required_data)).not_to match(/[0-9]/)
+      end
+      it "returns correct string with excluded_data" do
+        expect("30:n[%5%]".gen(errors: :excluded_data)).to include("5")
+      end
+      it "returns correct string with string_set_not_allowed" do
+        expect("30:n".gen(errors: :string_set_not_allowed)).not_to match(/^[0-9]+$/)
+      end
+      it "returns string not following the pattern" do
+        expect("!30:n".gen).not_to match(/^[0-9]{30}$/)
+      end
+      it "accepts alias expected errors" do
+        expect("30:L".gen(expected_errors: :length).size).not_to be(30)
+      end
+      it "accepts alias errors" do
+        expect("30:L".gen(errors: :length).size).not_to be(30)
+      end
+      it "accepts array of expected errors" do
+        expect("30:L".gen(expected_errors: [:length, :value]).size).not_to be(30)
+        expect("30:L".gen(expected_errors: [:length, :value])).not_to match(/^[a-zA-Z]+$/)
+      end
     end
-
+    #p ["uno:", :"5:N", ['.red','.green', :'3:L'] ].gen
+    describe "array of patterns" do
+      it "returns correct string" do
+        pattern = ["uno:", :"5:N", "dos"]
+        expect(pattern.gen).to match(/^uno:[0-9]{5}dos$/)
+      end
+      it "returns correct string with selection values" do
+        pattern = ["uno:", :"5:N", ["dos", "tres", :'3:X']]
+        expect(pattern.gen).to match(/^uno:[0-9]{5}(dos|tres|[A-Z]{3})$/)
+      end
+    end
   end
 
   describe "words" do
@@ -238,13 +261,13 @@ RSpec.describe StringPattern, "#generate" do
       end
     end
   end
-  describe 'regexp' do
-    it 'generates correct pattern for simple regexp' do
-        expect(/b{10}/.gen).to match(/^[b]{10}$/)
+  describe "regexp" do
+    it "generates correct pattern for simple regexp" do
+      expect(/b{10}/.gen).to match(/^[b]{10}$/)
     end
-    it 'generates correct pattern for more complex regexp' do
-        regexp = /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/
-        expect(regexp.gen).to match(regexp)
+    it "generates correct pattern for more complex regexp" do
+      regexp = /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/
+      expect(regexp.gen).to match(regexp)
     end
   end
 end
