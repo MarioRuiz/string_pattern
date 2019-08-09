@@ -35,6 +35,15 @@ RSpec.describe StringPattern, "#validate" do
     it "returns false when array of patterns and wrong :max_length" do
       expect(["3:n", "3:x"].validate("3333xxxx")).to eq false
     end
+    it "returns :min_length when wrong :min_length for email pattern" do
+      expect("20:@".validate("hola@hola.com")).to include(:min_length)
+    end
+    it "returns :max_length when wrong :max_length for email pattern" do
+      expect("20:@".validate("holafdsdfdsfsfd@hola.com")).to include(:max_length)
+    end
+    it "returns :length when wrong :length for email pattern" do
+      expect("20:@".validate("holafdsdfdsfsfd@hola.com")).to include(:length)
+    end
   end
   describe "value" do
     it "returns :value when wrong :value" do
@@ -51,6 +60,9 @@ RSpec.describe StringPattern, "#validate" do
     end
     it "returns false when array of patterns and wrong :value" do
       expect(["3:n", "3:x"].validate("3x3xxx")).to eq false
+    end
+    it "returns :value when wrong :value for email pattern" do
+      expect("20-40:@".validate("hola aaa@hola.com")).to include(:value)
     end
   end
 

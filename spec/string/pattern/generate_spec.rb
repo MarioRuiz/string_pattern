@@ -194,10 +194,37 @@ RSpec.describe StringPattern, "#generate" do
       it "generates correct email" do
         expect("30:@".gen).to match(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
         expect("30:@".gen.size).to eq(30)
+        expect("30-40:@".gen.size).to be_between(30,40)
       end
       it "display error when not possible to generate email" do
         expect('3:@'.gen).to eq ''
         expect { '3:@'.gen}.to output(/Not possible to generate an email on StringPattern.generate/).to_stdout
+      end
+      it 'denies email pattern' do
+        value = "30:!@".gen
+        if value.size == 30
+          expect(value).not_to match(/(\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i)
+        else
+          expect(value.size).not_to eq 30
+        end
+      end
+      it 'returns wrong email when expected_errors :value' do
+        expect("30:@".gen(errors: :value)).not_to match(/(\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i)
+      end
+      it 'returns wrong length when expected_errors :length' do
+        expect("30:@".gen(errors: :length).size).not_to be 30
+      end
+      it 'returns wrong length when expected_errors :min_length' do
+        expect("30:@".gen(errors: :min_length).size).to be < 30
+      end
+      it 'returns wrong length when expected_errors :max_length' do
+        expect("30:@".gen(errors: :max_length).size).to be > 30
+      end
+      it 'returns wrong email when expected_errors :required_data' do
+        expect("30:@".gen(errors: :required_data)).not_to match(/(\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i)
+      end
+      it 'returns wrong email when expected_errors :string_set_not_allowed' do
+        expect("30:@".gen(errors: :string_set_not_allowed)).not_to match(/(\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i)
       end
     end
 
@@ -225,6 +252,10 @@ RSpec.describe StringPattern, "#generate" do
       end
       it "returns string not following the pattern" do
         expect("!30:n".gen).not_to match(/^[0-9]{30}$/)
+        expect("30:!n".gen).not_to match(/^[0-9]{30}$/)
+      end
+      it 'allows 0 even when not following the pattern' do
+        expect("30:!0n".gen).not_to match(/^([0-9]{30})?$/)
       end
       it "accepts alias expected errors" do
         expect("30:L".gen(expected_errors: :length).size).not_to be(30)
@@ -287,6 +318,9 @@ RSpec.describe StringPattern, "#generate" do
         expect([:"5:X", 33].gen).to eq ""
         expect { [:"5:X", 33].gen }.to output(/StringPattern.generate: it seems you supplied wrong array of patterns/).to_stdout
       end
+      it 'accepts :symbols not being pattenrns' do
+        expect([:"5:N", :'ejemplo'].gen).to match(/\d{5}ejemplo/)
+      end
     end
   end
 
@@ -340,6 +374,34 @@ RSpec.describe StringPattern, "#generate" do
     #todo: this is failing, it is generating a string of a b or c
     xit 'accepts [^abc]' do
       regexp = /[^abc]/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [a-z]' do
+      regexp = /[a-z]/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [c-f]' do
+      regexp = /[c-f]/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [A-Z]' do
+      regexp = /[A-Z]+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [C-F]' do
+      regexp = /[C-F]+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [a-zA-Z]' do
+      regexp = /[a-zA-Z]+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [0-9]' do
+      regexp = /[0-9]+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts [3-9]' do
+      regexp = /[3-9]+/
       expect(regexp.gen.match?(regexp)).to eq true
     end
     it 'accepts start and end of line' do
@@ -411,6 +473,10 @@ RSpec.describe StringPattern, "#generate" do
     end
     it 'accepts a{3,6}' do
       regexp = /a{3,6}/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts fixed text' do
+      regexp = /fixeda{3,6}/
       expect(regexp.gen.match?(regexp)).to eq true
     end
 
