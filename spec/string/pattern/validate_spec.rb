@@ -1,10 +1,18 @@
 require "string_pattern"
 
 RSpec.describe StringPattern, "#validate" do
-  describe "length" do
+  describe 'generic' do
     it "returns empty when good validation" do
       expect("6:N".validate("333444")).to eq([])
     end
+    it "returns true when good validation for array of patterns" do
+      expect(["3:n","3:x"].validate("333xxx")).to eq(true)
+    end
+    it "accepts symbols as patterns" do
+      expect(:"6:N".validate("333444")).to eq([])
+    end
+  end
+  describe "length" do
     it "returns :min_length when wrong :min_length" do
       expect("6:N".validate("33344")).to include(:min_length)
     end
@@ -16,6 +24,12 @@ RSpec.describe StringPattern, "#validate" do
     end
     it "returns :length when wrong :max_length" do
       expect("6:N".validate("5466633344")).to include(:length)
+    end
+    it 'returns false when array of patterns and wrong :min_length' do
+      expect(["3:n","3:x"].validate("333xx")).to eq false
+    end
+    it 'returns false when array of patterns and wrong :max_length' do
+      expect(["3:n","3:x"].validate("3333xxxx")).to eq false
     end
   end
   describe "value" do
@@ -31,6 +45,10 @@ RSpec.describe StringPattern, "#validate" do
     it "returns :string_set_not_allowed when including string_set_not_allowed" do
       expect("6:N".validate("33a344")).to include(:string_set_not_allowed)
     end
+    it 'returns false when array of patterns and wrong :value' do
+      expect(["3:n","3:x"].validate("3x3xxx")).to eq false
+    end
+
   end
 
   describe "expected_errors" do
@@ -43,17 +61,26 @@ RSpec.describe StringPattern, "#validate" do
     it "returns true when wrong :value" do
       expect("6:N".validate("33d344", expected_errors: [:value])).to eq(true)
     end
+    it 'allows array of patterns' do
+      expect(["3:n","3:x"].validate("333xx3", errors: [:value])).to be true
+    end
   end
 
   describe "not expected_errors" do
     it 'admits alias :not_errors' do
       expect("6:N".validate("335344", not_errors: [:value])).to eq(true)
     end
+    it 'admits alias :non_expected_errors' do
+      expect("6:N".validate("335344", non_expected_errors: [:value])).to eq(true)
+    end
     it "returns true when good :value" do
       expect("6:N".validate("335344", not_expected_errors: [:value])).to eq(true)
     end
     it "returns false when wrong :value" do
       expect("6:N".validate("33d344", not_expected_errors: [:value])).to eq(false)
+    end
+    it 'allows array of patterns' do
+      expect(["3:n","3:x"].validate("333xx", not_errors: [:value])).to be true
     end
   end
 
