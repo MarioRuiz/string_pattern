@@ -333,5 +333,87 @@ RSpec.describe StringPattern, "#generate" do
       regexp = /^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$/
       expect(regexp.gen).to match(regexp)
     end
+    it 'accepts [abc]' do
+      regexp = /[abc]/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    #todo: this is failing, it is generating a string of a b or c
+    xit 'accepts [^abc]' do
+      regexp = /[^abc]/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts start and end of line' do
+      regexp = /^[a-z]+$/
+      puts regexp.gen
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts .' do
+      regexp = /.+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts \s' do
+      regexp = /\s+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts \S' do
+      regexp = /\S+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts \d' do
+      regexp = /\d+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts \D' do
+      regexp = /\D+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts \w' do
+      regexp = /\w+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts \W' do
+      regexp = /\W+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    #todo: failing
+    xit 'accepts \b' do
+      regexp = /\b+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts (...)' do
+      regexp = /(\w)+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts (a|b)' do
+      regexp = /(a|b)+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts a?' do
+      regexp = /a?b+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts a*' do
+      regexp = /a*b+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts a+' do
+      regexp = /a+/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts a{3}' do
+      regexp = /a{3}/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    #todo: 3 or more is returning now always 3
+    xit 'accepts a{3,}' do
+      regexp = /a{3}/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+    it 'accepts a{3,6}' do
+      regexp = /a{3,6}/
+      expect(regexp.gen.match?(regexp)).to eq true
+    end
+
+
   end
 end
