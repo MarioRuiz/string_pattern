@@ -103,6 +103,7 @@ class StringPattern
         return string
       elsif pattern.kind_of?(String) or pattern.kind_of?(Symbol)
         patt = StringPattern.analyze(pattern)
+        return '' unless patt.kind_of?(Struct)
         min_length = patt.min_length
         max_length = patt.max_length
         symbol_type = patt.symbol_type

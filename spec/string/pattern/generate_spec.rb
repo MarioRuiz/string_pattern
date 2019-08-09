@@ -2,6 +2,12 @@ require "string_pattern"
 
 RSpec.describe StringPattern, "#generate" do
   describe "pattern" do
+    describe "general" do
+      it "pattern with wrong type" do
+        expect(StringPattern.generate(5)).to eq "5"
+        expect { StringPattern.generate(5) }.to output(/pattern argument not valid on StringPattern.generate/).to_stdout
+      end
+    end
     describe "length" do
       it "generates with fix length" do
         expect("10:L".gen.size).to eq 10
@@ -11,6 +17,10 @@ RSpec.describe StringPattern, "#generate" do
       end
       it "generates with length between min and max" do
         expect("1-10:L".gen.size).to be_between(1, 10)
+      end
+      it "display error if non existing min_length" do
+        #expect(':N'.gen).to eq ''
+        expect { ':N'.gen}.to output(/pattern argument not valid on StringPattern.generate/).to_stdout
       end
     end
 
@@ -110,7 +120,7 @@ RSpec.describe StringPattern, "#generate" do
       end
     end
 
-    describe "mandatory characters or symbols" do
+    describe "required characters or symbols" do
       it "generates correct pattern when mandatory characters" do
         expect("10:n[/0/]".gen).to include("0")
       end
@@ -119,6 +129,10 @@ RSpec.describe StringPattern, "#generate" do
       end
       it "generates correct pattern when mandatory symbol" do
         expect("10:L/N/".gen).to match(/[0-9]+/)
+      end
+      it "cannot require and exclude the same character" do
+        expect("5:[b/a/%a%]".gen).to eq ""
+        expect { "5:[b/a/%a%]".gen }.to output(/a character cannot be required and excluded/).to_stdout
       end
     end
 
@@ -168,12 +182,22 @@ RSpec.describe StringPattern, "#generate" do
         values.delete("")
         expect(values.size).to eq(15)
       end
+      it "display error when no more combinations allowed" do
+        StringPattern.dont_repeat = true
+        10.times do '1:N'.gen end
+        expect('1:N'.gen).to eq ''
+        expect { '1:N'.gen}.to output(/Take in consideration if you are using StringPattern.dont_repeat=true/).to_stdout
+      end
     end
 
     describe "email" do
       it "generates correct email" do
         expect("30:@".gen).to match(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
         expect("30:@".gen.size).to eq(30)
+      end
+      it "display error when not possible to generate email" do
+        expect('3:@'.gen).to eq ''
+        expect { '3:@'.gen}.to output(/Not possible to generate an email on StringPattern.generate/).to_stdout
       end
     end
 
@@ -212,9 +236,33 @@ RSpec.describe StringPattern, "#generate" do
         expect("30:L".gen(expected_errors: [:length, :value]).size).not_to be(30)
         expect("30:L".gen(expected_errors: [:length, :value])).not_to match(/^[a-zA-Z]+$/)
       end
+      it "display error when expected error is :required_data but not :required_data on pattern" do
+        expect('10:N'.gen(errors: :required_data)).to eq ''
+        expect { '10:N'.gen(errors: :required_data) }.to output(/required data not supplied on pattern so it won't be possible to generate a wrong string/).to_stdout
+      end
+      it "display error when expected error is :excluded_data but not :excluded_data on pattern" do
+        expect('10:N'.gen(errors: :excluded_data)).to eq ''
+        expect { '10:N'.gen(errors: :excluded_data) }.to output(/excluded data not supplied on pattern so it won't be possible to generate a wrong string/).to_stdout
+      end
+      it "display error when expected error is :string_set_not_allowed but not :string_set_not_allowed on pattern" do
+        expect('10:*'.gen(errors: :string_set_not_allowed)).to eq ''
+        expect { '10:*'.gen(errors: :string_set_not_allowed) }.to output(/all characters are allowed so it won't be possible to generate a wrong string/).to_stdout
+      end
+      it "display error when expected error is :value but all chars accepted on pattern" do
+        expect('10:*'.gen(errors: :value)).to eq ''
+        expect { '10:*'.gen(errors: :value) }.to output(/Not possible to generate a non valid string on StringPattern.generate/).to_stdout
+      end
+      it "display error when expected error is :min_length but the min_length of the pattern is 0" do
+        expect('0-2:N'.gen(errors: :min_length)).to eq ''
+        expect { '0-2:N:*'.gen(errors: :min_length) }.to output(/min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters/).to_stdout
+      end
+      
     end
-    #p ["uno:", :"5:N", ['.red','.green', :'3:L'] ].gen
+
     describe "array of patterns" do
+      after(:all) do
+        StringPattern.optimistic = true
+      end
       it "returns correct string" do
         pattern = ["uno:", :"5:N", "dos"]
         expect(pattern.gen).to match(/^uno:[0-9]{5}dos$/)
@@ -222,6 +270,22 @@ RSpec.describe StringPattern, "#generate" do
       it "returns correct string with selection values" do
         pattern = ["uno:", :"5:N", ["dos", "tres", :'3:X']]
         expect(pattern.gen).to match(/^uno:[0-9]{5}(dos|tres|[A-Z]{3})$/)
+      end
+      it "accepts optimistic false" do
+        StringPattern.optimistic = false
+        expect(["5:X", "fixedtext", "3:N"].generate).to eq "5:Xfixedtext3:N"
+      end
+      it "returns random string when optimistic false and symbols supplied" do
+        StringPattern.optimistic = false
+        expect([:"5:X", "fixedtext", :"3:N"].generate).to match(/[A-Z]{5}fixedtext[0-9]{3}/)
+      end
+      it "accepts optimistic true" do
+        StringPattern.optimistic = true
+        expect(["5:X", "fixedtext", "3:N"].generate).to match(/[A-Z]{5}fixedtext[0-9]{3}/)
+      end
+      it "detects wrong array of patterns" do
+        expect([:"5:X", 33].gen).to eq ""
+        expect { [:"5:X", 33].gen }.to output(/StringPattern.generate: it seems you supplied wrong array of patterns/).to_stdout
       end
     end
   end

@@ -57,10 +57,5 @@ class StringPattern
     @national_chars = par
   end
 
-#  def self.word_separator=(par)
-#    @cache = Hash.new()
-#    @word_separator = par
-#  end                       
-
 end
 

@@ -54,6 +54,7 @@ class StringPattern
           symbol_type = patt.symbol_type
         else
           puts "String pattern class not supported (#{pat.class} for #{pat})"
+          return false
         end
 
         patterns.push({pattern: pat, min_length: min_length, max_length: max_length, symbol_type: symbol_type})
