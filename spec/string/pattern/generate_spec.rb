@@ -318,7 +318,7 @@ RSpec.describe StringPattern, "#generate" do
         expect([:"5:X", 33].gen).to eq ""
         expect { [:"5:X", 33].gen }.to output(/StringPattern.generate: it seems you supplied wrong array of patterns/).to_stdout
       end
-      it 'accepts :symbols not being pattenrns' do
+      it 'accepts :symbols not being patterns' do
         expect([:"5:N", :'ejemplo'].gen).to match(/\d{5}ejemplo/)
       end
     end

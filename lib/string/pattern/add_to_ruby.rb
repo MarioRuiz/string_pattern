@@ -37,8 +37,8 @@ class String
   def to_camel_case
     return self if self !~ /_/ && self !~ /\s/ && self =~ /^[A-Z]+.*/
 
-    gsub(/\W/, '_')
-      .split('_').map(&:capitalize).join
+    gsub(/\W/, "_")
+      .split("_").map(&:capitalize).join
   end
 end
 
@@ -70,40 +70,39 @@ class Regexp
   # adds method to convert a Regexp to StringPattern
   # returns an array of string patterns or just one string pattern
   def to_sp
-    regexp_s = self.to_s 
+    regexp_s = self.to_s
     return StringPattern.cache[regexp_s] unless StringPattern.cache[regexp_s].nil?
     regexp = Regexp.new regexp_s
-    require 'regexp_parser'
+    require "regexp_parser"
     default_infinite = StringPattern.default_infinite
     pata = []
-    pats = ''
+    pats = ""
     patg = [] # for (aa|bb|cc) group
     set = false
     capture = false
 
-    range = ''
-    fixed_text=false
-    last_char = (regexp.to_s.gsub("?-mix:",'').length)-2
+    range = ""
+    fixed_text = false
+    last_char = (regexp.to_s.gsub("?-mix:", "").length) - 2
     Regexp::Scanner.scan regexp do |type, token, text, ts, te|
       if type == :escape
         if token == :dot
           token = :literal
-          text = '.'
+          text = "."
         elsif token == :literal and text.size == 2
           text = text[1]
-        else 
+        else
           puts "Report token not controlled: type: #{type}, token: #{token}, text: '#{text}' [#{ts}..#{te}]"
         end
       end
 
-
       unless set || (token == :interval) || (token == :zero_or_one) ||
-             (token == :zero_or_more) || (token == :one_or_more) || (pats == '')
-        if (pats[0] == '[') && (pats[-1] == ']')
-          pats[0] = ''
+             (token == :zero_or_more) || (token == :one_or_more) || (pats == "")
+        if (pats[0] == "[") && (pats[-1] == "]")
+          pats[0] = ""
           if (token == :alternation) || !patg.empty?
-            if fixed_text 
-              if patg.size==0
+            if fixed_text
+              if patg.size == 0
                 patg << (pata.pop + pats.chop)
               else
                 patg[-1] += pats.chop
@@ -112,15 +111,15 @@ class Regexp
               patg << pats.chop
             end
           else
-            if fixed_text 
-              pata[-1]+=pats.chop
+            if fixed_text
+              pata[-1] += pats.chop
             else
-              if pats.size==2
+              if pats.size == 2
                 pata << pats.chop #jal
               else
                 pata << "1:[#{pats}" #jal
               end
-              if last_char==te and type==:literal and token==:literal
+              if last_char == te and type == :literal and token == :literal
                 pata << text
                 pats = ""
                 next
@@ -134,66 +133,66 @@ class Regexp
             pata << "1:#{pats}"
           end
         end
-        pats = ''
+        pats = ""
       end
-      fixed_text=false
+      fixed_text = false
 
       case token
       when :open
         set = true
-        pats += '['
+        pats += "["
       when :close
         if type == :set
           set = false
-          if pats[-1] == '['
+          if pats[-1] == "["
             pats.chop!
           else
-            pats += ']'
+            pats += "]"
           end
         elsif type == :group
           capture = false
           unless patg.empty?
-            patg << pats if pats.to_s != ''
+            patg << pats if pats.to_s != ""
             pata << patg
             patg = []
-            pats = ''
+            pats = ""
           end
         end
       when :capture
         capture = true if type == :group
       when :alternation
         if type == :meta
-          if pats != ''
+          if pats != ""
             patg << pats
-            pats = ''
+            pats = ""
           elsif patg.empty?
             # for the case the first element was not added to patg and was on pata fex: (a+|b|c)
             patg << pata.pop
-            end
+          end
         end
       when :range
         range = pats[-1]
         pats.chop!
       when :digit
-        pats += 'n'
+        pats += "n"
       when :nondigit
-        pats += '*[%0123456789%]'
+        pats += "*[%0123456789%]"
       when :space
-        pats += '_'
+        pats += "_"
       when :nonspace
-        pats += '*[% %]'
+        pats += "*[% %]"
       when :word
-        pats += 'Ln_'
+        pats += "Ln_"
       when :nonword
-        pats += '$'
+        pats += "$"
       when :word_boundary
-        pats += '$'
+        pats += "$"
       when :dot
-        pats += '*'
+        pats += "*"
       when :literal
-        if range == ''
+        if range == ""
           if text.size > 1
-            fixed_text=true
+            fixed_text = true
             if !patg.empty?
               patg << text.chop
             else
@@ -204,42 +203,41 @@ class Regexp
             pats += text
           end
         else
-          range = range + '-' + text
-          if range == 'a-z'
-            pats = 'x' + pats
-          elsif range == 'A-Z'
-            pats = 'X' + pats
-          elsif range == '0-9'
-            pats = 'n' + pats
+          range = range + "-" + text
+          if range == "a-z"
+            pats = "x" + pats
+          elsif range == "A-Z"
+            pats = "X" + pats
+          elsif range == "0-9"
+            pats = "n" + pats
           else
             pats += if set
                       (range[0]..range[2]).to_a.join
                     else
-                      '[' + (range[0]..range[2]).to_a.join + ']'
-                      end
-
+                      "[" + (range[0]..range[2]).to_a.join + "]"
+                    end
           end
-          range = ''
+          range = ""
         end
-        pats = '[' + pats + ']' unless set
+        pats = "[" + pats + "]" unless set
       when :interval
-        size = text.sub(',', '-').sub('{', '').sub('}', '')
-        size.chop! if size[-1] == '-'
-        pats = size + ':' + pats
+        size = text.sub(",", "-").sub("{", "").sub("}", "")
+        size.chop! if size[-1] == "-"
+        pats = size + ":" + pats
         if !patg.empty?
           patg << pats
         else
           pata << pats
         end
-        pats = ''
+        pats = ""
       when :zero_or_one
-        pats = '0-1:' + pats
+        pats = "0-1:" + pats
         if !patg.empty?
           patg << pats
         else
           pata << pats
         end
-        pats = ''
+        pats = ""
       when :zero_or_more
         pats = "0-#{default_infinite}:" + pats
         if !patg.empty?
@@ -247,7 +245,7 @@ class Regexp
         else
           pata << pats
         end
-        pats = ''
+        pats = ""
       when :one_or_more
         pats = "1-#{default_infinite}:" + pats
         if !patg.empty?
@@ -255,19 +253,19 @@ class Regexp
         else
           pata << pats
         end
-        pats = ''
+        pats = ""
       end
     end
-    if pats!=""
-      if pata.empty? 
-        if pats[0]=="[" and pats[-1]=="]" #fex: /[12ab]/
+    if pats != ""
+      if pata.empty?
+        if pats[0] == "[" and pats[-1] == "]" #fex: /[12ab]/
           pata = ["1:#{pats}"]
         end
       else
-        pata[-1]+=pats[1] #fex: /allo/
+        pata[-1] += pats[1] #fex: /allo/
       end
     end
-    if pata.size==1 and pata[0].kind_of?(String)
+    if pata.size == 1 and pata[0].kind_of?(String)
       res = pata[0]
     else
       res = pata

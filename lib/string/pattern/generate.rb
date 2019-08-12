@@ -1,5 +1,5 @@
 class StringPattern
-      ###############################################
+  ###############################################
   #   Generate a random string based on the pattern supplied
   #   (if SP_ADD_TO_RUBY==true, by default is true) To simplify its use it is part of the String, Array, Symbol and Kernel Ruby so can be easily used also like this:
   #     "10-15:Ln/x/".generate    #generate method on String class (alias: gen)
@@ -34,7 +34,7 @@ class StringPattern
   #                   If you want to include the character " use \"
   #                   If you want to include the character \ use \\
   #                   If you want to include the character [ use \[
-  #                   Other uses: 
+  #                   Other uses:
   #                     @ for email
   #                     W for English words, capital and lower
   #                     w for English words only lower and words separated by underscore
@@ -68,17 +68,16 @@ class StringPattern
     begin
       good_result = true
       tries += 1
-      string = ''
+      string = ""
 
       expected_errors = synonyms[:errors] if synonyms.keys.include?(:errors)
 
       if expected_errors.kind_of?(Symbol)
         expected_errors = [expected_errors]
       end
-      
-      if pattern.kind_of?(Array)
-        pattern.each {|pat|
 
+      if pattern.kind_of?(Array)
+        pattern.each { |pat|
           if pat.kind_of?(Array) # for the case it is one of the values
             pat = pat.sample
           end
@@ -89,7 +88,7 @@ class StringPattern
             else
               string << pat.to_s
             end
-          elsif pat.kind_of?(String) then
+          elsif pat.kind_of?(String)
             if @optimistic and pat.to_s.scan(/^!?\d+-?\d*:.+/).size > 0
               string << StringPattern.generate(pat.to_s, expected_errors: expected_errors)
             else
@@ -97,34 +96,36 @@ class StringPattern
             end
           else
             puts "StringPattern.generate: it seems you supplied wrong array of patterns: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-            return ''
+            return ""
           end
         }
         return string
       elsif pattern.kind_of?(String) or pattern.kind_of?(Symbol)
-        patt = StringPattern.analyze(pattern)
-        return '' unless patt.kind_of?(Struct)
-        min_length = patt.min_length
-        max_length = patt.max_length
-        symbol_type = patt.symbol_type
+        patt = StringPattern.analyze(pattern).clone
+        return "" unless patt.kind_of?(Struct)
 
-        required_data = patt.required_data
-        excluded_data = patt.excluded_data
-        string_set = patt.string_set
-        all_characters_set = patt.all_characters_set
+        min_length = patt.min_length.clone
+        max_length = patt.max_length.clone
+        symbol_type = patt.symbol_type.clone
+
+        required_data = patt.required_data.clone
+        excluded_data = patt.excluded_data.clone
+        string_set = patt.string_set.clone
+        all_characters_set = patt.all_characters_set.clone
 
         required_chars = Array.new
         unless required_data.size == 0
-          required_data.each {|rd|
+          required_data.each { |rd|
             required_chars << rd if rd.size == 1
           }
           unless excluded_data.size == 0
             if (required_chars.flatten & excluded_data.flatten).size > 0
               puts "pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-              return ''
+              return ""
             end
           end
         end
+
         string_set_not_allowed = Array.new
       elsif pattern.kind_of?(Regexp)
         return generate(pattern.to_sp, expected_errors: expected_errors)
@@ -133,30 +134,29 @@ class StringPattern
         return pattern.to_s
       end
 
-
       allow_empty = false
       deny_pattern = false
-      if symbol_type[0..0] == '!'
+      if symbol_type[0..0] == "!"
         deny_pattern = true
         possible_errors = [:length, :value, :string_set_not_allowed]
         (rand(possible_errors.size) + 1).times {
           expected_errors << possible_errors.sample
         }
         expected_errors.uniq!
-        if symbol_type[1..1] == '0'
+        if symbol_type[1..1] == "0"
           allow_empty = true
         end
-      elsif symbol_type[0..0] == '0' then
+      elsif symbol_type[0..0] == "0"
         allow_empty = true
       end
 
       if expected_errors.include?(:min_length) or expected_errors.include?(:length) or
-          expected_errors.include?(:max_length)
+         expected_errors.include?(:max_length)
         allow_empty = !allow_empty
       elsif expected_errors.include?(:value) or
-          expected_errors.include?(:excluded_data) or
-          expected_errors.include?(:required_data) or
-          expected_errors.include?(:string_set_not_allowed) and allow_empty
+            expected_errors.include?(:excluded_data) or
+            expected_errors.include?(:required_data) or
+            expected_errors.include?(:string_set_not_allowed) and allow_empty
         allow_empty = false
       end
 
@@ -170,28 +170,29 @@ class StringPattern
       unless deny_pattern
         if required_data.size == 0 and expected_errors_left.include?(:required_data)
           puts "required data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-          return ''
+          return ""
         end
 
         if excluded_data.size == 0 and expected_errors_left.include?(:excluded_data)
           puts "excluded data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-          return ''
+          return ""
         end
 
         if expected_errors_left.include?(:string_set_not_allowed)
           string_set_not_allowed = all_characters_set - string_set
-          if string_set_not_allowed.size == 0 then
+
+          if string_set_not_allowed.size == 0
             puts "all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-            return ''
+            return ""
           end
         end
       end
 
       if expected_errors_left.include?(:min_length) or
-          expected_errors_left.include?(:max_length) or
-          expected_errors_left.include?(:length)
+         expected_errors_left.include?(:max_length) or
+         expected_errors_left.include?(:length)
         if expected_errors_left.include?(:min_length) or
-            (min_length > 0 and expected_errors_left.include?(:length) and rand(2) == 0)
+           (min_length > 0 and expected_errors_left.include?(:length) and rand(2) == 0)
           if min_length > 0
             if allow_empty
               length = rand(min_length).to_i
@@ -205,7 +206,7 @@ class StringPattern
             expected_errors_left.delete(:min_length)
           else
             puts "min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-            return ''
+            return ""
           end
         elsif expected_errors_left.include?(:max_length) or expected_errors_left.include?(:length)
           length = max_length + 1 + rand(max_length).to_i
@@ -240,45 +241,45 @@ class StringPattern
           end
         end
 
-        if symbol_type == '!@' and expected_errors_left.size == 0 and !expected_errors.include?(:length) and
-            (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data))
+        if symbol_type == "!@" and expected_errors_left.size == 0 and !expected_errors.include?(:length) and
+           (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data))
           expected_errors_left.push(:value)
         end
-
       end
 
-      string = ''
-      if symbol_type != '@' and symbol_type != '!@' and length != 0 and string_set.size != 0
+      string = ""
+      if symbol_type != "@" and symbol_type != "!@" and length != 0 and string_set.size != 0
         if string_set.size != 0
-          1.upto(length) {|i| string << string_set.sample.to_s
+          1.upto(length) { |i|
+            string << string_set.sample.to_s
           }
         end
         if required_data.size > 0
           positions_to_set = (0..(string.size - 1)).to_a
-          required_data.each {|rd|
+          required_data.each { |rd|
             if (string.chars & rd).size > 0
               rd_to_set = (string.chars & rd).sample
             else
               rd_to_set = rd.sample
             end
-            if ((0...string.length).find_all {|i| string[i, 1] == rd_to_set}).size == 0
+            if ((0...string.length).find_all { |i| string[i, 1] == rd_to_set }).size == 0
               if positions_to_set.size == 0
                 puts "pattern not valid on StringPattern.generate, not possible to generate a valid string: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-                return ''
+                return ""
               else
                 k = positions_to_set.sample
                 string[k] = rd_to_set
                 positions_to_set.delete(k)
               end
             else
-              k = ((0...string.length).find_all {|i| string[i, 1] == rd_to_set}).sample
+              k = ((0...string.length).find_all { |i| string[i, 1] == rd_to_set }).sample
               positions_to_set.delete(k)
             end
           }
         end
-        excluded_data.each {|ed|
+        excluded_data.each { |ed|
           if (string.chars & ed).size > 0
-            (string.chars & ed).each {|s|
+            (string.chars & ed).each { |s|
               string.gsub!(s, string_set.sample)
             }
           end
@@ -286,9 +287,10 @@ class StringPattern
 
         if expected_errors_left.include?(:value)
           string_set_not_allowed = all_characters_set - string_set if string_set_not_allowed.size == 0
+
           if string_set_not_allowed.size == 0
             puts "Not possible to generate a non valid string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-            return ''
+            return ""
           end
           (rand(string.size) + 1).times {
             string[rand(string.size)] = (all_characters_set - string_set).sample
@@ -299,7 +301,7 @@ class StringPattern
         if expected_errors_left.include?(:required_data) and required_data.size > 0
           (rand(required_data.size) + 1).times {
             chars_to_remove = required_data.sample
-            chars_to_remove.each {|char_to_remove|
+            chars_to_remove.each { |char_to_remove|
               string.gsub!(char_to_remove, (string_set - chars_to_remove).sample)
             }
           }
@@ -322,11 +324,11 @@ class StringPattern
             expected_errors_left.delete(:string_set_not_allowed)
           end
         end
-      elsif (symbol_type == 'W' or symbol_type == 'P' or symbol_type=='w' or symbol_type =='p') and length>0
+      elsif (symbol_type == "W" or symbol_type == "P" or symbol_type == "w" or symbol_type == "p") and length > 0
         words = []
         words_short = []
-        if symbol_type == 'W'
-          if @words_camel.empty? 
+        if symbol_type == "W"
+          if @words_camel.empty?
             require "pathname"
             require "json"
             filename = File.join Pathname(File.dirname(__FILE__)), "../../../data", "english/nouns.json"
@@ -340,8 +342,8 @@ class StringPattern
           end
           words = @words_camel
           words_short = @words_camel_short
-        elsif symbol_type == 'w'
-          if @words.empty? 
+        elsif symbol_type == "w"
+          if @words.empty?
             require "pathname"
             require "json"
             filename = File.join Pathname(File.dirname(__FILE__)), "../../../data", "english/nouns.json"
@@ -353,8 +355,8 @@ class StringPattern
           end
           words = @words
           words_short = @words_short
-        elsif symbol_type == 'P'
-          if @palabras_camel.empty? 
+        elsif symbol_type == "P"
+          if @palabras_camel.empty?
             require "pathname"
             require "json"
             filename = File.join Pathname(File.dirname(__FILE__)), "../../../data", "spanish/palabras#{rand(12)}.json"
@@ -365,8 +367,8 @@ class StringPattern
           end
           words = @palabras_camel
           words_short = @palabras_camel_short
-        elsif symbol_type == 'p'
-          if @palabras.empty? 
+        elsif symbol_type == "p"
+          if @palabras.empty?
             require "pathname"
             require "json"
             filename = File.join Pathname(File.dirname(__FILE__)), "../../../data", "spanish/palabras#{rand(12)}.json"
@@ -385,18 +387,18 @@ class StringPattern
           tries += 1
           length = max_length - wordr.length
           if tries > 1000
-            wordr += 'A'*length
+            wordr += "A" * length
             break
           end
-          if symbol_type == 'w' or symbol_type == "p"
-            length = length -1 if wordr_array.size>0
-            res = (words_short.select { |word| word.length <= length && word.length!=length-1 && word.length!=length-2 && word.length!=length-3 }).sample.to_s
-            unless res.to_s==''
-              wordr_array<<res
+          if symbol_type == "w" or symbol_type == "p"
+            length = length - 1 if wordr_array.size > 0
+            res = (words_short.select { |word| word.length <= length && word.length != length - 1 && word.length != length - 2 && word.length != length - 3 }).sample.to_s
+            unless res.to_s == ""
+              wordr_array << res
               wordr = wordr_array.join(@word_separator)
             end
           else
-            wordr += (words_short.select { |word| word.length <= length && word.length!=length-1 && word.length!=length-2 && word.length!=length-3}).sample.to_s
+            wordr += (words_short.select { |word| word.length <= length && word.length != length - 1 && word.length != length - 2 && word.length != length - 3 }).sample.to_s
           end
           if (tries % 100) == 0
             words_short = words.sample(2000)
@@ -404,14 +406,13 @@ class StringPattern
         end
         good_result = true
         string = wordr
-
-      elsif (symbol_type == '@' or symbol_type == '!@') and length > 0
+      elsif (symbol_type == "@" or symbol_type == "!@") and length > 0
         if min_length > 6 and length < 6
           length = 6
         end
         if deny_pattern and
-            (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data) or
-                expected_errors.include?(:string_set_not_allowed))
+           (expected_errors.include?(:required_data) or expected_errors.include?(:excluded_data) or
+            expected_errors.include?(:string_set_not_allowed))
           expected_errors_left.push(:value)
           expected_errors.push(:value)
           expected_errors.uniq!
@@ -420,58 +421,68 @@ class StringPattern
 
         expected_errors_left_orig = expected_errors_left.dup
         tries = 0
+
         begin
           expected_errors_left = expected_errors_left_orig.dup
           tries += 1
-          string = ''
-          alpha_set = ALPHA_SET_LOWER + ALPHA_SET_CAPITAL
-          string_set = alpha_set + NUMBER_SET + ['.'] + ['_'] + ['-']
+          string = ""
+          alpha_set = ALPHA_SET_LOWER.clone + ALPHA_SET_CAPITAL.clone
+          string_set = alpha_set + NUMBER_SET.clone + ["."] + ["_"] + ["-"]
           string_set_not_allowed = all_characters_set - string_set
 
-          extension = '.'
-          at_sign = '@'
+          extension = "."
+          at_sign = "@"
 
           if expected_errors_left.include?(:value)
             if rand(2) == 1
-              extension = (all_characters_set - ['.']).sample
+              extension = (all_characters_set - ["."]).sample.dup
               expected_errors_left.delete(:value)
               expected_errors_left.delete(:required_data)
             end
+
             if rand(2) == 1
-              1.upto(rand(7)) {|i| extension << alpha_set.sample.downcase
+              1.upto(rand(7)) { |i|
+                extension << alpha_set.sample.downcase
               }
+
               (rand(extension.size) + 1).times {
-                extension[rand(extension.size)] = (string_set - alpha_set - ['.']).sample
+                extension[rand(extension.size)] = (string_set - alpha_set - ["."]).sample
               }
+
               expected_errors_left.delete(:value)
             else
-              1.upto(rand(3) + 2) {|i| extension << alpha_set.sample.downcase
+              1.upto(rand(3) + 2) { |i|
+                extension << alpha_set.sample.downcase
               }
             end
+
             if rand(2) == 1
-              at_sign = (string_set - ['@']).sample
+              at_sign = (string_set - ["@"]).sample.dup
               expected_errors_left.delete(:value)
               expected_errors_left.delete(:required_data)
             end
           else
             if length > 6
-              1.upto(rand(3) + 2) {|i| extension << alpha_set.sample.downcase
+              1.upto(rand(3) + 2) { |i|
+                extension << alpha_set.sample.downcase
               }
             else
-              1.upto(2) {|i| extension << alpha_set.sample.downcase
+              1.upto(2) { |i|
+                extension << alpha_set.sample.downcase
               }
             end
           end
           length_e = length - extension.size - 1
           length1 = rand(length_e - 1) + 1
           length2 = length_e - length1
-          1.upto(length1) {|i| string << string_set.sample}
+          1.upto(length1) { |i| string << string_set.sample }
 
           string << at_sign
 
-          domain = ''
-          domain_set = alpha_set + NUMBER_SET + ['.'] + ['-']
-          1.upto(length2) {|i| domain << domain_set.sample.downcase
+          domain = ""
+          domain_set = alpha_set + NUMBER_SET.clone + ["."] + ["-"]
+          1.upto(length2) { |i|
+            domain << domain_set.sample.downcase
           }
 
           if expected_errors.include?(:value) and rand(2) == 1 and domain.size > 0
@@ -480,6 +491,7 @@ class StringPattern
             }
             expected_errors_left.delete(:value)
           end
+
           string << domain << extension
 
           if expected_errors_left.include?(:value) or expected_errors_left.include?(:string_set_not_allowed)
@@ -498,9 +510,9 @@ class StringPattern
             # I'm doing this because many times the regular expression checking hangs with these characters
             wrong = %w(.. __ -- ._ _. .- -. _- -_ @. @_ @- .@ _@ -@ @@)
             if !(Regexp.union(*wrong) === string) #don't include any or the wrong strings
-              if string.index('@').to_i > 0 and
-                  string[0..(string.index('@') - 1)].scan(/([a-z0-9]+([\+\._\-][a-z0-9]|)*)/i).join == string[0..(string.index('@') - 1)] and
-                  string[(string.index('@') + 1)..-1].scan(/([0-9a-z]+([\.-][a-z0-9]|)*)/i).join == string[string[(string.index('@') + 1)..-1]]
+              if string.index("@").to_i > 0 and
+                 string[0..(string.index("@") - 1)].scan(/([a-z0-9]+([\+\._\-][a-z0-9]|)*)/i).join == string[0..(string.index("@") - 1)] and
+                 string[(string.index("@") + 1)..-1].scan(/([0-9a-z]+([\.-][a-z0-9]|)*)/i).join == string[string[(string.index("@") + 1)..-1]]
                 error_regular_expression = false
               else
                 error_regular_expression = true
@@ -516,7 +528,7 @@ class StringPattern
                 good_result = true
               end
             elsif expected_errors_left.size == 0 and
-                (expected_errors - [:length, :min_length, :max_length]).size == 0
+                  (expected_errors - [:length, :min_length, :max_length]).size == 0
               good_result = true
             elsif expected_errors != [:length]
               if !error_regular_expression
@@ -526,11 +538,10 @@ class StringPattern
               end
             end
           end
-
         end until good_result or tries > 100
         unless good_result
           puts "Not possible to generate an email on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-          return ''
+          return ""
         end
       end
       if @dont_repeat
@@ -561,9 +572,8 @@ class StringPattern
     unless good_result
       puts "Not possible to generate the string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
       puts "Take in consideration if you are using StringPattern.dont_repeat=true that you don't try to generate more strings that are possible to be generated"
-      return ''
+      return ""
     end
-
     return string
   end
 end
