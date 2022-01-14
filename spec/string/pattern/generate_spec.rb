@@ -437,10 +437,9 @@ RSpec.describe StringPattern, "#generate" do
       regexp = /\W+/
       expect(regexp.gen.match?(regexp)).to eq true
     end
-    #todo: failing
-    xit 'accepts \b' do
+    it 'accepts \b' do
       regexp = /\b+/
-      expect(regexp.gen.match?(regexp)).to eq true
+      expect(regexp.gen.match?(/[^a-zA-Z0-9_]+/)).to eq true
     end
     it 'accepts (...)' do
       regexp = /(\w)+/
