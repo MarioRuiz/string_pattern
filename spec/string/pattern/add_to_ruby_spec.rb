@@ -32,6 +32,9 @@ RSpec.describe StringPattern, "#add_to_ruby" do
     it "responds to to_camel_case" do
       expect("ccccc aaa".to_camel_case).to eq "CccccAaa"
     end
+    it "responds to to_snake_case" do
+      expect("Caaaa bjjAm, ; Djjáb".to_snake_case).to eq "caaaa_bjj_am_djj_b"
+    end
     it 'returns camel case of Spanish characters' do
       expect("caña de albóndiga".to_camel_case).to eq "CañaDeAlbóndiga"
     end

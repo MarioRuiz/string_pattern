@@ -40,6 +40,17 @@ class String
     gsub(/[^a-zA-Z0-9ññÑáéíóúÁÉÍÓÚüÜ_]/, "_")
       .split("_").map(&:capitalize).join
   end
+
+  ########################################################
+  # Convert to snake_case a string
+  ########################################################
+  def to_snake_case
+    gsub(/\W/, '_')
+      .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+      .gsub(/([a-z])([A-Z])/, '\1_\2')
+      .downcase
+      .gsub(/_+/, '_')
+  end
 end
 
 class Symbol
