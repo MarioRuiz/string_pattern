@@ -428,6 +428,17 @@ StringPattern.optimistic = true
 #>SAAERfixedtext988
 ```
 
+#### block_list
+
+To specify which words will be avoided from the results
+
+```ruby
+StringPattern.block_list = ['example', 'wrong', 'ugly']
+StringPattern.block_list_enabled = true
+"2-20:Tn".gen #>AAñ34Ef99éNOP
+```
+
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/marioruiz/string_pattern.

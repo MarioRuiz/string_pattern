@@ -25,9 +25,13 @@ require_relative "string/pattern/validate"
 #             In case using regular expressions the maximum when using * or + for repetitions
 # word_separator: (String, default: '_')
 #             When generating words using symbol types 'w' or 'p' the character to separate the english or spanish words.
+# block_list: (Array, default: empty)
+#             Array of words to be avoided from resultant strings.
+# block_list_enabled: (TrueFalse, default: false)
+#             If true block_list will be take in consideration
 class StringPattern
   class << self
-    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite, :word_separator
+    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite, :word_separator, :block_list, :block_list_enabled
   end
   @national_chars = (("a".."z").to_a + ("A".."Z").to_a).join
   @optimistic = true
@@ -36,6 +40,8 @@ class StringPattern
   @dont_repeat = false
   @default_infinite = 10
   @word_separator = "_"
+  @block_list_enabled = false
+  @block_list = []
   NUMBER_SET = ("0".."9").to_a
   SPECIAL_SET = [" ", "~", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "{", "}", "[", "]", "'", ";", ":", "?", ">", "<", "`", "|", "/", '"']
   ALPHA_SET_LOWER = ("a".."z").to_a
@@ -56,4 +62,5 @@ class StringPattern
     @cache = Hash.new()
     @national_chars = par
   end
+
 end

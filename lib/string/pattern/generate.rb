@@ -568,6 +568,16 @@ class StringPattern
           good_result = true
         end
       end
+      if @block_list_enabled
+        if @block_list.is_a?(Array)
+          @block_list.each do |bl|
+            if string.match?(/#{bl}/i)
+              good_result = false
+              break
+            end
+          end
+        end
+      end
     end until good_result or tries > 10000
     unless good_result
       puts "Not possible to generate the string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"

@@ -479,6 +479,26 @@ RSpec.describe StringPattern, "#generate" do
       expect(regexp.gen.match?(regexp)).to eq true
     end
 
+    describe "block_list" do
+      before(:all) do
+        StringPattern.block_list = []
+        StringPattern.block_list_enabled = false
+      end
+
+      after(:each) do
+        StringPattern.block_list = []
+        StringPattern.block_list_enabled = false
+      end
+
+      it "doesn't return any of block list" do
+        StringPattern.block_list_enabled = true
+        StringPattern.block_list = ('a'..'x').to_a
+        5.times do 
+          expect("2:L".gen).to match(/^[yz]{2}$/i)
+        end
+      end
+    end
+
 
   end
 end
