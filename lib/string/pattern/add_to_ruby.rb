@@ -90,11 +90,14 @@ class Regexp
     pats = ""
     patg = [] # for (aa|bb|cc) group
     set = false
+    set_negate = false
+    options = []
     capture = false
 
     range = ""
     fixed_text = false
-    last_char = (regexp.to_s.gsub("?-mix:", "").length) - 2
+    options = regexp.to_s.scan(/\A\(\?([mix]*)\-[mix]*:/).join.split('')
+    last_char = (regexp.to_s.gsub(/\A\(\?[mix]*\-[mix]*:/, "").length) - 2
     Regexp::Scanner.scan regexp do |type, token, text, ts, te|
       if type == :escape
         if token == :dot
@@ -126,9 +129,9 @@ class Regexp
               pata[-1] += pats.chop
             else
               if pats.size == 2
-                pata << pats.chop #jal
+                pata << pats.chop
               else
-                pata << "1:[#{pats}" #jal
+                pata << "1:[#{pats}"
               end
               if last_char == te and type == :literal and token == :literal
                 pata << text
@@ -147,7 +150,6 @@ class Regexp
         pats = ""
       end
       fixed_text = false
-
       case token
       when :open
         set = true
@@ -158,7 +160,13 @@ class Regexp
           if pats[-1] == "["
             pats.chop!
           else
-            pats += "]"
+            if set_negate
+              pats+="%]*"
+              set_negate = false
+            else
+              pats += "]"
+            end    
+
           end
         elsif type == :group
           capture = false
@@ -168,6 +176,11 @@ class Regexp
             patg = []
             pats = ""
           end
+        end
+      when :negate
+        if set and pats[-1] == '['
+          pats+="%"
+          set_negate = true
         end
       when :capture
         capture = true if type == :group
@@ -182,6 +195,7 @@ class Regexp
           end
         end
       when :range
+        pats.chop! if options.include?('i')
         range = pats[-1]
         pats.chop!
       when :digit
@@ -212,21 +226,37 @@ class Regexp
             pats = text[-1]
           else
             pats += text
+            pats += text.upcase if options.include?('i')
           end
         else
           range = range + "-" + text
           if range == "a-z"
-            pats = "x" + pats
+            if options.include?('i')
+              pats = "L" + pats
+            else
+              pats = "x" + pats
+            end
           elsif range == "A-Z"
-            pats = "X" + pats
+            if options.include?('i')
+              pats = "L" + pats
+            else
+              pats = "X" + pats
+            end
           elsif range == "0-9"
             pats = "n" + pats
           else
-            pats += if set
-                      (range[0]..range[2]).to_a.join
-                    else
-                      "[" + (range[0]..range[2]).to_a.join + "]"
-                    end
+            if set
+              pats += (range[0]..range[2]).to_a.join
+              if options.include?('i')
+                pats += (range[0]..range[2]).to_a.join.upcase
+              end
+            else
+              trange = (range[0]..range[2]).to_a.join
+              if options.include?('i')
+                trange += trange.upcase
+              end
+              pats += "[" + trange + "]"
+            end
           end
           range = ""
         end

@@ -371,8 +371,7 @@ RSpec.describe StringPattern, "#generate" do
       regexp = /[abc]/
       expect(regexp.gen.match?(regexp)).to eq true
     end
-    #todo: this is failing, it is generating a string of a b or c
-    xit 'accepts [^abc]' do
+    it 'accepts [^abc]' do
       regexp = /[^abc]/
       expect(regexp.gen.match?(regexp)).to eq true
     end
