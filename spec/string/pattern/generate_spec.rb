@@ -464,8 +464,7 @@ RSpec.describe StringPattern, "#generate" do
       regexp = /a{3}/
       expect(regexp.gen.match?(regexp)).to eq true
     end
-    #todo: 3 or more is returning now always 3
-    xit 'accepts a{3,}' do
+    it 'accepts a{3,}' do
       regexp = /a{3}/
       expect(regexp.gen.match?(regexp)).to eq true
     end

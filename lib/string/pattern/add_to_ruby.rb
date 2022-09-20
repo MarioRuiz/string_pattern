@@ -263,7 +263,7 @@ class Regexp
         pats = "[" + pats + "]" unless set
       when :interval
         size = text.sub(",", "-").sub("{", "").sub("}", "")
-        size.chop! if size[-1] == "-"
+        size+=(default_infinite+size.chop.to_i).to_s if size[-1] == "-"
         pats = size + ":" + pats
         if !patg.empty?
           patg << pats

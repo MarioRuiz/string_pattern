@@ -83,6 +83,18 @@ RSpec.describe StringPattern, "#add_to_ruby" do
     it '/[m-z]+\d+\w+[ab]+/i.to_sp' do
       expect(/[m-z]+\d+\w+[ab]+/i.to_sp).to eq ["1-10:[mnopqrstuvwxyzMNOPQRSTUVWXYZ]", "1-10:n", "1-10:Ln_", "1-10:[aAbB]"]
     end
+    it '/a{3,}/.to_sp' do
+      expect(/a{3,}/.to_sp).to eq '3-13:[a]'
+    end
+    it '/a{3,8}/.to_sp' do
+      expect(/a{3,8}/.to_sp).to eq '3-8:[a]'
+    end
+    it '/a{3}/.to_sp' do
+      expect(/a{3}/.to_sp).to eq '3:[a]'
+    end
+    it '/a{15,}/.to_sp' do
+      expect(/a{15,}/.to_sp).to eq '15-25:[a]'
+    end
 
   end
 
