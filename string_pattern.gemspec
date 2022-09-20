@@ -16,6 +16,6 @@ Gem::Specification.new do |s|
   s.extra_rdoc_files = ["LICENSE","README.md"]
   s.homepage    = 'https://github.com/MarioRuiz/string_pattern'
   s.license       = 'MIT'
-  s.add_runtime_dependency 'regexp_parser', '~> 1.3', '>= 1.3.0'
+  s.add_runtime_dependency 'regexp_parser', '~> 2.5', '>= 2.5.0' #jal
 end
 
