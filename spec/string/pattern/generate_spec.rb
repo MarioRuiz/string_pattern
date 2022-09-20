@@ -371,8 +371,7 @@ RSpec.describe StringPattern, "#generate" do
       regexp = /[abc]/
       expect(regexp.gen.match?(regexp)).to eq true
     end
-    #todo: this is failing, it is generating a string of a b or c
-    xit 'accepts [^abc]' do
+    it 'accepts [^abc]' do
       regexp = /[^abc]/
       expect(regexp.gen.match?(regexp)).to eq true
     end
@@ -465,8 +464,7 @@ RSpec.describe StringPattern, "#generate" do
       regexp = /a{3}/
       expect(regexp.gen.match?(regexp)).to eq true
     end
-    #todo: 3 or more is returning now always 3
-    xit 'accepts a{3,}' do
+    it 'accepts a{3,}' do
       regexp = /a{3}/
       expect(regexp.gen.match?(regexp)).to eq true
     end
@@ -477,6 +475,26 @@ RSpec.describe StringPattern, "#generate" do
     it 'accepts fixed text' do
       regexp = /fixeda{3,6}/
       expect(regexp.gen.match?(regexp)).to eq true
+    end
+
+    describe "block_list" do
+      before(:all) do
+        StringPattern.block_list = []
+        StringPattern.block_list_enabled = false
+      end
+
+      after(:each) do
+        StringPattern.block_list = []
+        StringPattern.block_list_enabled = false
+      end
+
+      it "doesn't return any of block list" do
+        StringPattern.block_list_enabled = true
+        StringPattern.block_list = ('a'..'x').to_a
+        5.times do 
+          expect("2:L".gen).to match(/^[yz]{2}$/i)
+        end
+      end
     end
 
 

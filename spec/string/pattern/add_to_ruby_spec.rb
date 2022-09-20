@@ -65,6 +65,37 @@ RSpec.describe StringPattern, "#add_to_ruby" do
     it "responds to to_sp" do
       expect(/\d{2}/.to_sp).to eq "2:n"
     end
+    it "/[^abc]+/i.to_sp" do
+      expect(/[^abc]+/i.to_sp).to eq "1-10:[%aAbBcC%]*"
+    end
+    it "/[abc]+/i.to_sp" do 
+      expect(/[abc]+/i.to_sp).to eq "1-10:[aAbBcC]"
+    end
+    it "/[a-z]+/i.to_sp" do
+      expect(/[a-z]+/i.to_sp).to eq "1-10:L"
+    end
+    it "/[a-z]+/.to_sp" do
+      expect(/[a-z]+/.to_sp).to eq "1-10:x"
+    end
+    it "/[m-z]+/i.to_sp" do
+      expect(/[m-z]+/i.to_sp).to eq '1-10:[mnopqrstuvwxyzMNOPQRSTUVWXYZ]'
+    end
+    it '/[m-z]+\d+\w+[ab]+/i.to_sp' do
+      expect(/[m-z]+\d+\w+[ab]+/i.to_sp).to eq ["1-10:[mnopqrstuvwxyzMNOPQRSTUVWXYZ]", "1-10:n", "1-10:Ln_", "1-10:[aAbB]"]
+    end
+    it '/a{3,}/.to_sp' do
+      expect(/a{3,}/.to_sp).to eq '3-13:[a]'
+    end
+    it '/a{3,8}/.to_sp' do
+      expect(/a{3,8}/.to_sp).to eq '3-8:[a]'
+    end
+    it '/a{3}/.to_sp' do
+      expect(/a{3}/.to_sp).to eq '3:[a]'
+    end
+    it '/a{15,}/.to_sp' do
+      expect(/a{15,}/.to_sp).to eq '15-25:[a]'
+    end
+
   end
 
   describe "from Kernel" do
