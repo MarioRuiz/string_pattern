@@ -16,7 +16,7 @@
 Gemfile.lock
 /Gemfile.lock
 .covered.msgpack
-
+*.log
 
 # Used by dotenv library to load environment variables.
 # .env
