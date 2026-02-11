@@ -318,12 +318,9 @@ Examples:
 
 If you need to validate if a specific text is fulfilling the pattern you can use the validate method.
 
-If a string pattern supplied and no other parameters supplied the output will be an array with the errors detected. 
+When you supply a single pattern and do **not** supply `expected_errors` or `not_expected_errors`, the method returns an **array of error symbols**: an empty array `[]` when the text is valid, or one or more of `:min_length`, `:max_length`, `:length`, `:value`, `:string_set_not_allowed`, `:required_data`, `:excluded_data` when invalid.
 
-
-Possible output values, empty array (validation without errors detected) or one or more of: :min_length, :max_length, :length, :value, :string_set_not_allowed, :required_data, :excluded_data
-
-In case an array of patterns supplied it will return only true or false
+When an array of patterns is supplied, the method returns only `true` or `false`.
 
 Examples:
 
@@ -441,6 +438,69 @@ To specify which words will be avoided from the results
 StringPattern.block_list = ['example', 'wrong', 'ugly']
 StringPattern.block_list_enabled = true
 "2-20:Tn".gen #>AAñ34Ef99éNOP
+```
+
+#### StringPattern.analyze
+
+To inspect how a pattern is parsed without generating or validating:
+
+```ruby
+p = StringPattern.analyze("10-20:LN/x/")
+# => #<Struct min_length=10, max_length=20, symbol_type="LN/x/", required_data=..., string_set=..., unique=false>
+p.min_length   # => 10
+p.max_length   # => 20
+p.symbol_type  # => "LN/x/"
+```
+
+Useful for debugging or building tools on top of the pattern DSL. Invalid patterns return the pattern string; use `silent: true` to avoid logging.
+
+#### Error handling and logging
+
+By default, when generation is impossible (e.g. invalid pattern or `dont_repeat` exhausted), `generate` returns an empty string `""` and a message is printed. You can:
+
+- Set `StringPattern.logger = Logger.new($stderr)` to send messages to a logger instead of `puts`.
+- Set `StringPattern.raise_on_error = true` to raise `StringPattern::GenerationImpossibleError` or `StringPattern::InvalidPatternError` instead of returning `""`.
+
+#### Reproducible generation (seed)
+
+Pass `seed:` to get the same string for the same pattern in tests:
+
+```ruby
+"10:N".gen(seed: 42)  # => same result every time
+```
+
+#### Batch generation (sample)
+
+Generate up to `n` distinct strings without mutating the global dont_repeat cache:
+
+```ruby
+StringPattern.sample("4:N", 10)  # => array of 10 distinct 4-digit strings
+```
+
+#### Boolean validation (valid?)
+
+Check if text matches a pattern without building the full error list:
+
+```ruby
+StringPattern.valid?(text: "user@domain.com", pattern: "14-40:@")  # => true
+```
+
+#### UUID
+
+Generate a random UUID v4 or validate one:
+
+```ruby
+StringPattern.uuid                    # => "550e8400-e29b-41d4-a716-446655440000"
+StringPattern.valid_uuid?(some_str)   # => true or false
+```
+
+#### block_list as Proc
+
+You can set `block_list` to a Proc for custom blocking:
+
+```ruby
+StringPattern.block_list = ->(s) { s.include?("forbidden") }
+StringPattern.block_list_enabled = true
 ```
 
 

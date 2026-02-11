@@ -226,6 +226,11 @@ RSpec.describe StringPattern, "#generate" do
       it 'returns wrong email when expected_errors :string_set_not_allowed' do
         expect("30:@".gen(errors: :string_set_not_allowed)).not_to match(/(\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i)
       end
+      it "generated email passes validation (regression)" do
+        email = "25-35:@".gen
+        expect(email).not_to eq("")
+        expect("25-35:@".validate(email)).to eq([])
+      end
     end
 
     describe "expected errors" do
@@ -287,7 +292,7 @@ RSpec.describe StringPattern, "#generate" do
         expect('0-2:N'.gen(errors: :min_length)).to eq ''
         expect { '0-2:N:*'.gen(errors: :min_length) }.to output(/min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters/).to_stdout
       end
-      
+
     end
 
     describe "array of patterns" do
@@ -491,12 +496,59 @@ RSpec.describe StringPattern, "#generate" do
       it "doesn't return any of block list" do
         StringPattern.block_list_enabled = true
         StringPattern.block_list = ('a'..'x').to_a
-        5.times do 
+        5.times do
           expect("2:L".gen).to match(/^[yz]{2}$/i)
         end
       end
+      it "supports block_list as Proc" do
+        StringPattern.block_list_enabled = true
+        StringPattern.block_list = ->(s) { s.include?("bad") }
+        5.times do
+          val = "5:L".gen
+          expect(val).not_to include("bad")
+        end
+        StringPattern.block_list = []
+        StringPattern.block_list_enabled = false
+      end
     end
 
+    describe "seed (reproducible generation)" do
+      it "produces the same string for the same seed" do
+        a = "10:N".gen(seed: 42)
+        b = "10:N".gen(seed: 42)
+        expect(a).to eq(b)
+      end
+      it "produces different strings for different seeds" do
+        a = "10:N".gen(seed: 1)
+        b = "10:N".gen(seed: 2)
+        expect(a).not_to eq(b)
+      end
+    end
 
+    describe "sample" do
+      it "returns n distinct strings when possible" do
+        results = StringPattern.sample("2:N", 5)
+        expect(results.size).to eq(5)
+        expect(results.uniq.size).to eq(5)
+      end
+      it "returns array of strings matching pattern" do
+        results = StringPattern.sample("3:N", 3)
+        results.each { |s| expect(s).to match(/^[0-9]{3}$/) }
+      end
+    end
+
+    describe "uuid and valid_uuid?" do
+      it "generates a valid UUID v4" do
+        u = StringPattern.uuid
+        expect(u).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/i)
+      end
+      it "valid_uuid? returns true for valid UUID" do
+        expect(StringPattern.valid_uuid?("550e8400-e29b-41d4-a716-446655440000")).to eq(true)
+      end
+      it "valid_uuid? returns false for invalid string" do
+        expect(StringPattern.valid_uuid?("not-a-uuid")).to eq(false)
+        expect(StringPattern.valid_uuid?("550e8400-e29b-41d4-a716-44665544000")).to eq(false)
+      end
+    end
   end
 end

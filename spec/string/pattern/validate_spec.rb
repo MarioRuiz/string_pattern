@@ -5,6 +5,9 @@ RSpec.describe StringPattern, "#validate" do
     it "returns empty when good validation" do
       expect("6:N".validate("333444")).to eq([])
     end
+    it "returns false when text is nil" do
+      expect(StringPattern.validate(text: nil, pattern: "6:N")).to eq(false)
+    end
     it "returns true when good validation for array of patterns" do
       expect(["3:n", "3:x"].validate("333xxx")).to eq(true)
     end
@@ -16,6 +19,27 @@ RSpec.describe StringPattern, "#validate" do
       expect { ['1:N',3].validate('3')}.to output(/String pattern class not supported/).to_stdout
     end
   end
+
+  describe "valid?" do
+    it "returns true when text matches pattern" do
+      expect(StringPattern.valid?(text: "333444", pattern: "6:N")).to eq(true)
+    end
+    it "returns false when text does not match" do
+      expect(StringPattern.valid?(text: "33", pattern: "6:N")).to eq(false)
+    end
+    it "returns true for array pattern when valid" do
+      expect(StringPattern.valid?(text: "333xxx", pattern: ["3:n", "3:x"])).to eq(true)
+    end
+  end
+
+  describe "edge cases" do
+    it "handles block_list_enabled without block_list" do
+      StringPattern.block_list_enabled = false
+      StringPattern.block_list = []
+      expect("6:N".validate("333444")).to eq([])
+    end
+  end
+
   describe "length" do
     it "returns :min_length when wrong :min_length" do
       expect("6:N".validate("33344")).to include(:min_length)
@@ -63,6 +87,22 @@ RSpec.describe StringPattern, "#validate" do
     end
     it "returns :value when wrong :value for email pattern" do
       expect("20-40:@".validate("hola aaa@hola.com")).to include(:value)
+    end
+  end
+
+  describe "email validation (regression)" do
+    it "returns empty array for valid email within length" do
+      expect("14-40:@".validate("user@domain.com")).to eq([])
+      expect("10-40:@".validate("test.user+tag@example.co.uk")).to eq([])
+    end
+    it "returns :value for invalid email missing local part" do
+      expect("1-40:@".validate("@domain.com")).to include(:value)
+    end
+    it "returns :value for invalid email with consecutive dots" do
+      expect("1-40:@".validate("user@domain..com")).to include(:value)
+    end
+    it "returns :value for invalid email with double at-sign" do
+      expect("1-40:@".validate("user@@domain.com")).to include(:value)
     end
   end
 

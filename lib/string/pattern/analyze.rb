@@ -1,8 +1,8 @@
 class StringPattern
-  ###############################################
-  # Analyze the pattern supplied and returns an object of Pattern structure including:
-  # min_length, max_length, symbol_type, required_data, excluded_data, data_provided, string_set, all_characters_set
-  ###############################################
+  # Analyzes a pattern string and returns a Pattern struct.
+  # @param pattern [String, Symbol] Pattern in format "length:type" or "min-max:type" (e.g. "10:N", "5-15:L")
+  # @param silent [Boolean] If true, invalid patterns do not log a message.
+  # @return [Struct, String] Pattern struct with min_length, max_length, symbol_type, required_data, excluded_data, data_provided, string_set, all_characters_set, unique; or the pattern string if invalid.
   def StringPattern.analyze(pattern, silent: false)
     #unless @cache[pattern.to_s].nil?
     #  return Pattern.new(@cache[pattern.to_s].min_length.clone, @cache[pattern.to_s].max_length.clone,
@@ -16,7 +16,7 @@ class StringPattern
       min_length, symbol_type = pattern.to_s.scan(/^!?(\d+):(.+)/)[0]
       max_length = min_length
       if min_length.nil?
-        puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}" unless silent
+        StringPattern.log_message("pattern argument not valid on StringPattern.generate: #{pattern.inspect}") unless silent
         return pattern.to_s
       end
     end

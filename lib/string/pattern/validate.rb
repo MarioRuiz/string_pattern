@@ -54,7 +54,7 @@ class StringPattern
           max_length = patt.max_length.clone
           symbol_type = patt.symbol_type.clone
         else
-          puts "String pattern class not supported (#{pat.class} for #{pat})"
+          StringPattern.log_message("String pattern class not supported (#{pat.class} for #{pat})")
           return false
         end
 
@@ -133,7 +133,7 @@ class StringPattern
         required_chars << rd if rd.size == 1
       }
       if (required_chars.flatten & excluded_data.flatten).size > 0
-        puts "pattern argument not valid on StringPattern.validate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+        StringPattern.log_message("pattern argument not valid on StringPattern.validate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
         return ""
       end
     end
@@ -183,20 +183,7 @@ class StringPattern
           end
         }
       else #symbol_type=="@"
-        string = text_to_validate
-        wrong = %w(.. __ -- ._ _. .- -. _- -_ @. @_ @- .@ _@ -@ @@)
-        if !(Regexp.union(*wrong) === string) #don't include any or the wrong strings
-          if string.index("@").to_i > 0 and
-             string[0..(string.index("@") - 1)].scan(/([a-z0-9]+([\+\._\-][a-z0-9]|)*)/i).join == string[0..(string.index("@") - 1)] and
-             string[(string.index("@") + 1)..-1].scan(/([0-9a-z]+([\.-][a-z0-9]|)*)/i).join == string[string[(string.index("@") + 1)..-1]]
-            error_regular_expression = false
-          else
-            error_regular_expression = true
-          end
-        else
-          error_regular_expression = true
-        end
-
+        error_regular_expression = !StringPattern.valid_email?(text_to_validate)
         if error_regular_expression
           detected_errors.push(:value)
         end

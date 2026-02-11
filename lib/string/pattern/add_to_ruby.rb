@@ -106,7 +106,7 @@ class Regexp
         elsif token == :literal and text.size == 2
           text = text[1]
         else
-          puts "Report token not controlled: type: #{type}, token: #{token}, text: '#{text}' [#{ts}..#{te}]"
+          StringPattern.log_message("Report token not controlled: type: #{type}, token: #{token}, text: '#{text}' [#{ts}..#{te}]")
         end
       end
 
@@ -165,7 +165,7 @@ class Regexp
               set_negate = false
             else
               pats += "]"
-            end    
+            end
 
           end
         elsif type == :group
@@ -190,7 +190,6 @@ class Regexp
             patg << pats
             pats = ""
           elsif patg.empty?
-            # for the case the first element was not added to patg and was on pata fex: (a+|b|c)
             patg << pata.pop
           end
         end
@@ -299,11 +298,11 @@ class Regexp
     end
     if pats != ""
       if pata.empty?
-        if pats[0] == "[" and pats[-1] == "]" #fex: /[12ab]/
+        if pats[0] == "[" and pats[-1] == "]"
           pata = ["1:#{pats}"]
         end
       else
-        pata[-1] += pats[1] #fex: /allo/
+        pata[-1] += pats[1]
       end
     end
     if pata.size == 1 and pata[0].kind_of?(String)
@@ -325,7 +324,7 @@ module Kernel
     if pattern.is_a?(String) || pattern.is_a?(Array) || pattern.is_a?(Symbol) || pattern.is_a?(Regexp)
       StringPattern.generate(pattern, expected_errors: expected_errors, **synonyms)
     else
-      puts " Kernel generate method: class not recognized:#{pattern.class}"
+      StringPattern.log_message(" Kernel generate method: class not recognized:#{pattern.class}")
     end
   end
 
