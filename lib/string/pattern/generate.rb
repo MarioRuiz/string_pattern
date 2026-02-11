@@ -64,6 +64,8 @@ class StringPattern
   #     the generated string
   ###############################################
   def StringPattern.generate(pattern, expected_errors: [], **synonyms)
+    seed_given = synonyms.key?(:seed)
+    saved_rng = seed_given ? srand(synonyms[:seed]) : nil
     tries = 0
     begin
       good_result = true
@@ -95,7 +97,7 @@ class StringPattern
               string << pat
             end
           else
-            puts "StringPattern.generate: it seems you supplied wrong array of patterns: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+            StringPattern.log_message("StringPattern.generate: it seems you supplied wrong array of patterns: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
             return ""
           end
         }
@@ -120,7 +122,7 @@ class StringPattern
           }
           unless excluded_data.size == 0
             if (required_chars.flatten & excluded_data.flatten).size > 0
-              puts "pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+              StringPattern.log_message("pattern argument not valid on StringPattern.generate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
               return ""
             end
           end
@@ -130,7 +132,7 @@ class StringPattern
       elsif pattern.kind_of?(Regexp)
         return generate(pattern.to_sp, expected_errors: expected_errors)
       else
-        puts "pattern argument not valid on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+        StringPattern.log_message("pattern argument not valid on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
         return pattern.to_s
       end
 
@@ -169,12 +171,12 @@ class StringPattern
 
       unless deny_pattern
         if required_data.size == 0 and expected_errors_left.include?(:required_data)
-          puts "required data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+          StringPattern.log_message("required data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
           return ""
         end
 
         if excluded_data.size == 0 and expected_errors_left.include?(:excluded_data)
-          puts "excluded data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+          StringPattern.log_message("excluded data not supplied on pattern so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
           return ""
         end
 
@@ -182,7 +184,7 @@ class StringPattern
           string_set_not_allowed = all_characters_set - string_set
 
           if string_set_not_allowed.size == 0
-            puts "all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+            StringPattern.log_message("all characters are allowed so it won't be possible to generate a wrong string. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
             return ""
           end
         end
@@ -205,7 +207,7 @@ class StringPattern
             expected_errors_left.delete(:length)
             expected_errors_left.delete(:min_length)
           else
-            puts "min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+            StringPattern.log_message("min_length is 0 so it won't be possible to generate a wrong string smaller than 0 characters. StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
             return ""
           end
         elsif expected_errors_left.include?(:max_length) or expected_errors_left.include?(:length)
@@ -264,7 +266,7 @@ class StringPattern
             end
             if ((0...string.length).find_all { |i| string[i, 1] == rd_to_set }).size == 0
               if positions_to_set.size == 0
-                puts "pattern not valid on StringPattern.generate, not possible to generate a valid string: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+                StringPattern.log_message("pattern not valid on StringPattern.generate, not possible to generate a valid string: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
                 return ""
               else
                 k = positions_to_set.sample
@@ -289,7 +291,7 @@ class StringPattern
           string_set_not_allowed = all_characters_set - string_set if string_set_not_allowed.size == 0
 
           if string_set_not_allowed.size == 0
-            puts "Not possible to generate a non valid string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+            StringPattern.log_message("Not possible to generate a non valid string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
             return ""
           end
           (rand(string.size) + 1).times {
@@ -502,24 +504,11 @@ class StringPattern
             expected_errors_left.delete(:string_set_not_allowed)
           end
 
-          error_regular_expression = false
+          error_regular_expression = !StringPattern.valid_email?(string)
 
           if deny_pattern and expected_errors.include?(:length)
             good_result = true #it is already with wrong length
           else
-            # I'm doing this because many times the regular expression checking hangs with these characters
-            wrong = %w(.. __ -- ._ _. .- -. _- -_ @. @_ @- .@ _@ -@ @@)
-            if !(Regexp.union(*wrong) === string) #don't include any or the wrong strings
-              if string.index("@").to_i > 0 and
-                 string[0..(string.index("@") - 1)].scan(/([a-z0-9]+([\+\._\-][a-z0-9]|)*)/i).join == string[0..(string.index("@") - 1)] and
-                 string[(string.index("@") + 1)..-1].scan(/([0-9a-z]+([\.-][a-z0-9]|)*)/i).join == string[string[(string.index("@") + 1)..-1]]
-                error_regular_expression = false
-              else
-                error_regular_expression = true
-              end
-            else
-              error_regular_expression = true
-            end
 
             if expected_errors.size == 0
               if error_regular_expression
@@ -540,7 +529,9 @@ class StringPattern
           end
         end until good_result or tries > 100
         unless good_result
-          puts "Not possible to generate an email on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+          msg = "Not possible to generate an email on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+          raise StringPattern::GenerationImpossibleError, msg if @raise_on_error
+          StringPattern.log_message(msg)
           return ""
         end
       end
@@ -569,7 +560,9 @@ class StringPattern
         end
       end
       if @block_list_enabled
-        if @block_list.is_a?(Array)
+        if @block_list.respond_to?(:call)
+          good_result = false if @block_list.call(string)
+        elsif @block_list.is_a?(Array)
           @block_list.each do |bl|
             if string.match?(/#{bl}/i)
               good_result = false
@@ -580,10 +573,14 @@ class StringPattern
       end
     end until good_result or tries > 10000
     unless good_result
-      puts "Not possible to generate the string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
-      puts "Take in consideration if you are using StringPattern.dont_repeat=true that you don't try to generate more strings that are possible to be generated"
+      msg = "Not possible to generate the string on StringPattern.generate: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+      msg += "\nTake in consideration if you are using StringPattern.dont_repeat=true that you don't try to generate more strings that are possible to be generated"
+      raise StringPattern::GenerationImpossibleError, msg if @raise_on_error
+      StringPattern.log_message(msg)
       return ""
     end
     return string
+  ensure
+    srand(saved_rng) if saved_rng
   end
 end
