@@ -1,7 +1,7 @@
 # StringPattern
 
 [![Gem Version](https://badge.fury.io/rb/string_pattern.svg)](https://rubygems.org/gems/string_pattern)
-[![Build Status](https://travis-ci.com/MarioRuiz/string_pattern.svg?branch=master)](https://github.com/MarioRuiz/string_pattern)
+[![CI](https://github.com/MarioRuiz/string_pattern/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/MarioRuiz/string_pattern/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/MarioRuiz/string_pattern/badge.svg?branch=master)](https://coveralls.io/github/MarioRuiz/string_pattern?branch=master)
 ![Gem](https://img.shields.io/gem/dt/string_pattern)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/y/MarioRuiz/string_pattern)
