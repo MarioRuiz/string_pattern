@@ -503,6 +503,51 @@ StringPattern.block_list = ->(s) { s.include?("forbidden") }
 StringPattern.block_list_enabled = true
 ```
 
+Entries in `block_list` are matched as case-insensitive literals. Set `StringPattern.block_list_regexp = true` when an entry should be a regular expression, which was the behavior before 2.5.0.
+
+#### Scoped configuration
+
+`StringPattern.with` applies settings for one block and restores the previous values afterwards, including when the block raises:
+
+```ruby
+StringPattern.with(dont_repeat: true, raise_on_error: true) do
+  "6:N".gen
+end
+```
+
+`StringPattern.reset!` restores the default configuration and clears the pattern cache and the generated-value cache.
+
+#### Validate a regular expression
+
+`valid?` and `validate` accept a `Regexp` and match the whole string. The same methods are available on the regexp itself:
+
+```ruby
+StringPattern.valid?(text: "abc", pattern: /[a-z]+/)   # => true
+StringPattern.valid?(text: "abc1", pattern: /[a-z]+/)  # => false
+/[a-z]+/.validate("abc")                               # => []
+/[a-z]+/.val("abc1")                                   # => [:value]
+```
+
+#### Explain a validation
+
+```ruby
+StringPattern.explain(text: "ab", pattern: "6:N")
+# => { valid: false, errors: [:min_length, :length, :value, :string_set_not_allowed], message: "invalid: ...", index: nil }
+
+StringPattern.explain(text: "333111", pattern: ["3:n", "3:x"])
+# => { valid: false, errors: [...], message: "segment 1 does not match: ...", index: 1 }
+```
+
+#### IBAN and Luhn
+
+International checksums for test data. `iban` requires a country code and only generates countries whose length is known (ES, DE, FR, GB, PT, IT, NL, BE). The BBAN is random. `valid_iban?` accepts any well-formed IBAN. `luhn` builds a digit string with a valid Luhn check digit and does not represent a real card.
+
+```ruby
+StringPattern.iban(country: "DE")          # => "DE..."
+StringPattern.valid_iban?("DE89 3704 0044 0532 0130 00")  # => true
+StringPattern.luhn(length: 16)             # => "16 digits"
+StringPattern.valid_luhn?("79927398713")   # => true
+```
 
 ## Contributing
 

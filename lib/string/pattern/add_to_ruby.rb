@@ -78,6 +78,13 @@ class Regexp
 
   alias gen generate
 
+  # Validates +string_to_validate+ against this regular expression as a full-string match.
+  def validate(string_to_validate, expected_errors: [], not_expected_errors: [], **synonyms)
+    StringPattern.validate(text: string_to_validate, pattern: self, expected_errors: expected_errors, not_expected_errors: not_expected_errors, **synonyms)
+  end
+
+  alias val validate
+
   # adds method to convert a Regexp to StringPattern
   # returns an array of string patterns or just one string pattern
   def to_sp

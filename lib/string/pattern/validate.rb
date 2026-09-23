@@ -32,6 +32,11 @@ class StringPattern
     if (not_expected_errors.include?(:min_length) or not_expected_errors.include?(:max_length)) and !not_expected_errors.include?(:length)
       not_expected_errors.push(:length)
     end
+    if pattern.is_a?(Regexp)
+      return false if text_to_validate.nil?
+      detected_errors = StringPattern.regexp_full_match?(pattern, text_to_validate.to_s) ? [] : [:value]
+      return StringPattern.validation_decision(detected_errors, expected_errors, not_expected_errors)
+    end
     if pattern.kind_of?(Array) and pattern.size == 1
       pattern = pattern[0]
     elsif pattern.kind_of?(Array) and pattern.size > 1
@@ -133,7 +138,9 @@ class StringPattern
         required_chars << rd if rd.size == 1
       }
       if (required_chars.flatten & excluded_data.flatten).size > 0
-        StringPattern.log_message("pattern argument not valid on StringPattern.validate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}")
+        message = "pattern argument not valid on StringPattern.validate, a character cannot be required and excluded at the same time: #{pattern.inspect}, expected_errors: #{expected_errors.inspect}"
+        raise StringPattern::InvalidPatternError, message if @raise_on_error
+        StringPattern.log_message(message)
         return ""
       end
     end
@@ -190,18 +197,99 @@ class StringPattern
       end
     end
 
-    if expected_errors.size == 0 and not_expected_errors.size == 0
-      return detected_errors.uniq
+    StringPattern.validation_decision(detected_errors, expected_errors, not_expected_errors)
+  end
+
+  def self.validation_decision(detected_errors, expected_errors, not_expected_errors)
+    if expected_errors.size == 0 && not_expected_errors.size == 0
+      detected_errors.uniq
+    elsif (expected_errors & detected_errors) == expected_errors && (not_expected_errors & detected_errors).empty?
+      true
     else
-      if expected_errors & detected_errors == expected_errors
-        if (not_expected_errors & detected_errors).size > 0
-          return false
-        else
-          return true
-        end
-      else
-        return false
-      end
+      false
+    end
+  end
+
+  # True when +text+ matches the whole +regexp+, not a substring.
+  def self.regexp_full_match?(regexp, text)
+    return false unless text.is_a?(String)
+    anchored = Regexp.new("\\A(?:#{regexp.source})\\z", regexp.options)
+    anchored.match?(text)
+  rescue RegexpError
+    false
+  end
+
+  # Describes why +text+ does or does not match +pattern+.
+  # @return [Hash] :valid, :errors, :message, and :index (segment index for arrays)
+  def self.explain(text: nil, pattern: nil, **synonyms)
+    text = synonyms[:text_to_validate] if text.nil? && synonyms.key?(:text_to_validate)
+    text = synonyms[:validate] if text.nil? && synonyms.key?(:validate)
+
+    if pattern.is_a?(Array) && pattern.size > 1
+      return explain_array(text, pattern)
+    end
+
+    errors = validate(text: text, pattern: pattern)
+    if errors == true || (errors.is_a?(Array) && errors.empty?)
+      { valid: true, errors: [], message: "valid", index: nil }
+    elsif errors.is_a?(Array)
+      { valid: false, errors: errors, message: "invalid: #{errors.join(', ')}", index: nil }
+    else
+      { valid: false, errors: [:value], message: "invalid", index: nil }
+    end
+  end
+
+  def self.explain_array(text, patterns)
+    ok, index, errors = match_segments(text.to_s, patterns, 0)
+    if ok
+      { valid: true, errors: [], message: "valid", index: nil }
+    else
+      { valid: false, errors: errors, message: "segment #{index} does not match: #{errors.join(', ')}", index: index }
+    end
+  end
+
+  def self.match_segments(text, patterns, index)
+    if patterns.empty?
+      return [true, nil, []] if text.empty?
+      return [false, index, [:length]]
+    end
+
+    if patterns.size == 1
+      errors = validate(text: text, pattern: patterns[0])
+      return [true, nil, []] if errors == true || (errors.is_a?(Array) && errors.empty?)
+      errs = errors.is_a?(Array) ? errors : [:value]
+      return [false, index, errs]
+    end
+
+    info = segment_bounds(patterns[0])
+    return [false, index, [:value]] if info.nil?
+
+    best = nil
+    (info[:min]..info[:max]).each do |n|
+      next if n > text.length
+      errors = validate(text: text[0, n], pattern: patterns[0])
+      next unless errors == true || (errors.is_a?(Array) && errors.empty?)
+      ok, idx, errs = match_segments(text[n..], patterns[1..], index + 1)
+      return [true, nil, []] if ok
+      best = [idx, errs] if best.nil? || idx > best[0]
+    end
+
+    return [false, best[0], best[1]] if best
+
+    errors = validate(text: text, pattern: patterns[0])
+    errs = errors.is_a?(Array) ? errors : [:value]
+    errs = [:value] if errs.empty?
+    [false, index, errs]
+  end
+
+  def self.segment_bounds(pat)
+    pattern_like = pat.to_s.scan(/(\d+)-(\d+):(.+)/).size > 0 || pat.to_s.scan(/^!?(\d+):(.+)/).size > 0
+    if pat.is_a?(String) && (!optimistic || !pattern_like)
+      { min: pat.length, max: pat.length }
+    elsif pat.is_a?(Symbol) || pat.is_a?(String)
+      analyzed = analyze(pat, silent: true)
+      return nil unless analyzed.is_a?(Struct)
+      { min: analyzed.min_length, max: analyzed.max_length }
     end
   end
 end

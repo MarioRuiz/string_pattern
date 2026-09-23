@@ -1,6 +1,8 @@
 SP_ADD_TO_RUBY = true if !defined?(SP_ADD_TO_RUBY)
+require_relative "string_pattern/version"
 require_relative "string/pattern/add_to_ruby" if SP_ADD_TO_RUBY
 require_relative "string/pattern/analyze"
+require_relative "string/pattern/checksum"
 require_relative "string/pattern/email"
 require_relative "string/pattern/generate"
 require_relative "string/pattern/validate"
@@ -41,13 +43,36 @@ class StringPattern
   # Raised when generation is impossible (e.g. exhausted by dont_repeat) and {raise_on_error} is true.
   GenerationImpossibleError = Class.new(StandardError)
 
+  # Wraps Random so +rand+ matches Kernel#rand for negative limits and zero.
+  # Array#sample calls +rand+ with a positive integer.
+  class RandomSource
+    def initialize(random)
+      @random = random
+    end
+
+    def rand(limit = nil)
+      return @random.rand if limit.nil?
+      if limit.is_a?(Integer) && limit.negative?
+        @random.rand(-limit)
+      elsif limit == 0
+        @random.rand
+      else
+        @random.rand(limit)
+      end
+    end
+  end
+
   class << self
     # @return [String, nil] When set, warning messages are sent here instead of +puts+.
     attr_accessor :logger
     # @return [Boolean] When true, invalid patterns or impossible generation raise instead of returning "".
     attr_accessor :raise_on_error
-    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite, :word_separator, :block_list, :block_list_enabled
+    attr_accessor :national_chars, :optimistic, :dont_repeat, :cache, :cache_values, :default_infinite, :word_separator, :block_list, :block_list_enabled, :block_list_regexp
   end
+  SCOPE_KEYS = %i[
+    dont_repeat block_list block_list_enabled block_list_regexp
+    national_chars optimistic word_separator raise_on_error logger
+  ].freeze
   @national_chars = (("a".."z").to_a + ("A".."Z").to_a).join
   @optimistic = true
   @cache = Hash.new()
@@ -59,6 +84,7 @@ class StringPattern
   @block_list = []
   @logger = nil
   @raise_on_error = false
+  @block_list_regexp = false
   NUMBER_SET = ("0".."9").to_a
   SPECIAL_SET = [" ", "~", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "{", "}", "[", "]", "'", ";", ":", "?", ">", "<", "`", "|", "/", '"']
   ALPHA_SET_LOWER = ("a".."z").to_a
@@ -101,25 +127,78 @@ class StringPattern
   end
 
   # Generates up to +n+ distinct strings for +pattern+. Uses a temporary dont_repeat state.
+  # Keyword arguments, including +seed:+, are forwarded to {generate}. A seed advances one
+  # Random across the whole sample so successive values differ.
   # @param pattern [String, Symbol, Array, Regexp]
   # @param n [Integer]
   # @return [Array<String>]
-  def self.sample(pattern, n)
+  def self.sample(pattern, n, seed: nil, **options)
     return [] if n <= 0
+
+    rng = StringPattern::RandomSource.new(seed.nil? ? Random.new : Random.new(seed))
     old_dont = @dont_repeat
     old_cache = @cache_values.dup
+    started = true
     @dont_repeat = true
     @cache_values = {}
     results = []
     n.times do
-      s = generate(pattern)
+      s = generate(pattern, _rng: rng, **options)
       break if s.nil? || s.empty?
       results << s
     end
     results
   ensure
-    @dont_repeat = old_dont
-    @cache_values = old_cache
+    if started
+      @dont_repeat = old_dont
+      @cache_values = old_cache
+    end
+  end
+
+  # Runs +block+ with the given settings and restores the previous values afterwards.
+  # @return [Object] the block's result
+  def self.with(**options)
+    unknown = options.keys - SCOPE_KEYS
+    raise ArgumentError, "unknown option: #{unknown.join(', ')}" unless unknown.empty?
+
+    saved = {}
+    SCOPE_KEYS.each { |key| saved[key] = instance_variable_get("@#{key}") }
+    options.each do |key, value|
+      if key == :national_chars
+        self.national_chars = value
+      else
+        instance_variable_set("@#{key}", value)
+      end
+    end
+    yield
+  ensure
+    if saved
+      saved.each do |key, value|
+        if key == :national_chars
+          self.national_chars = value unless @national_chars == value
+        else
+          instance_variable_set("@#{key}", value)
+        end
+      end
+    end
+  end
+
+  # Restores configuration defaults and clears pattern and generated-value caches.
+  # @return [void]
+  def self.reset!
+    self.national_chars = (("a".."z").to_a + ("A".."Z").to_a).join
+    @optimistic = true
+    @dont_repeat = false
+    @default_infinite = 10
+    @word_separator = "_"
+    @block_list_enabled = false
+    @block_list = []
+    @block_list_regexp = false
+    @logger = nil
+    @raise_on_error = false
+    @cache = {}
+    @cache_values = {}
+    nil
   end
 
   # Generates a random UUID v4 (e.g. "550e8400-e29b-41d4-a716-446655440000").
